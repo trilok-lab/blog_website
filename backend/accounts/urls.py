@@ -1,12 +1,10 @@
 from django.urls import path, include
-from .views import request_phone_code, verify_phone_code, register, mobile_complete
+from . import views
 
 urlpatterns = [
-    path('request-phone-code/', request_phone_code, name='request-phone-code'),
-    path('verify-phone-code/', verify_phone_code, name='verify-phone-code'),
-    path('register/', register, name='register'),
-    path('mobile-complete/', mobile_complete, name='mobile-complete'),
+    path('request-phone-code/', views.RequestPhoneCodeView.as_view(), name='request-phone-code'),
+    path('verify-phone-code/', views.VerifyPhoneCodeView.as_view(), name='verify-phone-code'),
+    path('register/', views.RegisterView.as_view(), name='register'),
+    path('mobile-complete/', views.mobile_complete, name='mobile-complete'), # Can remain a FBV
     path('', include('social_django.urls', namespace='social')),
 ]
-
-
