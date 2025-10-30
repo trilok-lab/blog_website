@@ -22,36 +22,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y-qx#)pq8l0^^4&05q44lf3rn3cop=8$mxm$h(vl@%+y-bs2*3'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
 
 env = environ.Env(
-    DEBUG=(bool, True),
-    SECRET_KEY=(str, "changeme"),
-    ALLOWED_HOSTS=(list, ["*"]),
-    DATABASE_URL=(str, None),
-    EMAIL_HOST=(str, "sandbox.smtp.mailtrap.io"),
-    EMAIL_HOST_USER=(str, ""),
-    EMAIL_HOST_PASSWORD=(str, ""),
-    EMAIL_PORT=(int, 2525),
-    STRIPE_SECRET_KEY=(str, "sk_test_51SFyRj0k78sge9tRQ6bHkGQai4tTO8knlvcOymlZGdh7NozMkVxnJZXu2Idvvk2i0JQD9SeI9cbddXIx94E6ZQhR00V9t4SsKx"),
-    STRIPE_WEBHOOK_SECRET=(str, ""),
-    TWILIO_ACCOUNT_SID=(str, "VA0ba843dafce259d9080c1b4888c0d064"),
-    TWILIO_AUTH_TOKEN=(str, "462b5cccf83d8f21194ddb0c1b005ad0"),
-    TWILIO_FROM_NUMBER=(str, "+1 978 971 0673"),
-    PAGINATION_PER_PAGE=(int, 10),
-    SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=(str, ""),
-    SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET=(str, ""),
-    SOCIAL_AUTH_FACEBOOK_KEY=(str, ""),
-    SOCIAL_AUTH_FACEBOOK_SECRET=(str, ""),
+    # set casting, default value
+    DEBUG=(bool, False),
 )
 
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env.str('SECRET_KEY')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env('DEBUG')
+
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1']) # Added a default for local dev
+
+# Database
+# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+
+DATABASES = {
+    'default': env.db(),
+}
+# Stripe
+STRIPE_SECRET_KEY = env.str('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = env.str('STRIPE_WEBHOOK_SECRET')
+
+# Twilio
+TWILIO_ACCOUNT_SID = env.str('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = env.str('TWILIO_AUTH_TOKEN')
+TWILIO_FROM_NUMBER = env.str('TWILIO_FROM_NUMBER')
 
 # Application definition
 
@@ -111,14 +111,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-DATABASES = {
-    'default': env.db() if env("DATABASE_URL") else {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -171,7 +163,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': env("PAGINATION_PER_PAGE"),
+    'PAGE_SIZE': env.int("PAGINATION_PER_PAGE", default=10),
 }
 
 # Email (Mailtrap)
@@ -179,7 +171,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-EMAIL_PORT = env('EMAIL_PORT')
+EMAIL_PORT = env.int('EMAIL_PORT')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@yourdomain.com')
 EMAIL_USE_TLS = True
 
 # Social Auth

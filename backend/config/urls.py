@@ -28,7 +28,7 @@ urlpatterns = [
     path('auth/jwt/create/', TokenObtainPairView.as_view(), name='jwt-create'),
     path('auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
     path('auth/', include('accounts.urls')),
-    path('api/articles/', include('articles.urls')),
+    path('api/', include('articles.urls')),
     path('api/admin/', include('admin_features.urls')),
     path('api/comments/', include('comments.urls')),
     path('api/notifications/', include('notifications.urls')),

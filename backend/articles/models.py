@@ -44,7 +44,7 @@ class Article(models.Model):
     excerpt = models.CharField(max_length=280, blank=True)
     body = models.TextField()
     image = models.ImageField(upload_to="articles/", blank=True, null=True)
-    categories = models.ManyToManyField(Category, blank=True)
+    categories = models.ManyToManyField(Category, blank=True, related_name="articles")
     approved = models.BooleanField(default=False)
     is_slider = models.BooleanField(default=False)
     popularity = models.PositiveIntegerField(default=0)
