@@ -23,16 +23,12 @@ Thumbs.db
 # =============================================================================
 # Environment & Secrets
 # =============================================================================
-# Ignore all .env files
 .env
 .env.*
 !/.env.example
 
-# Specifically for your backend .env
-backend/.env
-
 # =============================================================================
-# Python / Django (backend/)
+# Python / Django
 # =============================================================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -44,40 +40,8 @@ __pycache__/
 venv/
 env/
 
-# Distribution / packaging
-*.egg-info/
-.eggs/
-dist/
-build/
-
-# Django
+# Django specific
 *.sqlite3
 db.sqlite3
-/media/
-/staticfiles/
-
-# Coverage reports
-.coverage
-.coverage.*
-htmlcov/
-
-# =============================================================================
-# Node.js / React Native / Expo (frontend/)
-# =============================================================================
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Dependency directories
-/frontend/node_modules/
-
-# Expo files
-/frontend/.expo/
-/frontend/.expo-shared/
-
-# Build outputs
-/frontend/web-build/
-/frontend/dist/
+media/
+staticfiles/
