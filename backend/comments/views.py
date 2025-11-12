@@ -40,4 +40,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         # Twilio verification placeholder
         return response.Response({"detail": "Phone verified."})
 
-# Create your views here.

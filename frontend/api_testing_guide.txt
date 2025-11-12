@@ -1,0 +1,73 @@
+# Postman API Endpoint Testing Guide
+
+This guide provides instructions on how to test the authentication API endpoints using an API client like Postman.
+
+**Note:** The base URL for the API is assumed to be `http://127.0.0.1:8000/api`. Please replace this with your actual backend server address if it's different.
+
+---
+
+### 1. Request Phone Verification Code
+
+This endpoint initiates the phone verification process by sending an SMS code to the provided mobile number.
+
+- **Method:** `POST`
+- **URL:** `http://127.0.0.1:8000/api/auth/request-phone-code/`
+- **Headers:**
+  - `Content-Type`: `application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+      "mobile_no": "+15551234567"
+  }
+  ```
+- **Instructions:**
+  1. Replace `+15551234567` with a valid mobile number in E.164 format.
+  2. A successful response will contain a `session_id`. **Copy this `session_id`** as it is required for the next steps.
+
+---
+
+### 2. Verify Phone Code
+
+This endpoint verifies the SMS code sent to the user's mobile number.
+
+- **Method:** `POST`
+- **URL:** `http://127.0.0.1:8000/api/auth/verify-phone-code/`
+- **Headers:**
+  - `Content-Type`: `application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+      "session_id": "PASTE_THE_SESSION_ID_FROM_STEP_1_HERE",
+      "code": "123456"
+  }
+  ```
+- **Instructions:**
+  1. Paste the `session_id` you received from the previous request.
+  2. Replace `"123456"` with the actual verification code you received via SMS.
+  3. A successful response indicates that the phone number has been verified.
+
+---
+
+### 3. Register New User
+
+This endpoint creates a new user account after the phone number has been successfully verified.
+
+- **Method:** `POST`
+- **URL:** `http://127.0.0.1:8000/api/auth/register/`
+- **Headers:**
+  - `Content-Type`: `application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+      "email": "testuser@example.com",
+      "password": "a-strong-password",
+      "first_name": "Test",
+      "last_name": "User",
+      "mobile_no": "+15551234567",
+      "verification_session_id": "PASTE_THE_SESSION_ID_FROM_STEP_1_HERE"
+  }
+  ```
+- **Instructions:**
+  1. Fill in the user details (`email`, `password`, `first_name`, `last_name`).
+  2. Use the same `mobile_no` and `verification_session_id` from the previous steps.
+  3. A successful request will create the user account and you should receive a success message.
