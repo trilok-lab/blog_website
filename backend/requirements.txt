@@ -5,11 +5,24 @@ Django>=5.0,<5.1
 djangorestframework>=3.14,<3.15
 djangorestframework-simplejwt>=5.3,<5.4
 
-# Other Django-related packages
+# Django Add-ons
 django-cors-headers>=4.3,<4.4
+django-filter>=24.2     # required for filters in your views
 social-auth-app-django>=5.4,<5.5
 python-dotenv>=1.0,<1.1
 
-# External APIs/Services
+# ImageField Support
+Pillow>=10.0
+
+# PostgreSQL Support
+psycopg2-binary>=2.9
+
+# API / Docs
+drf-yasg>=1.21.7
+
+# External Services
 twilio>=8.0,<8.1
 stripe>=8.0,<8.1
+
+# Production Static Files (optional but recommended)
+whitenoise>=6.6

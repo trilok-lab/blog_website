@@ -1,0 +1,15 @@
+# Django Core
+Django>=5.0,<5.1
+
+# Django REST Framework
+djangorestframework>=3.14,<3.15
+djangorestframework-simplejwt>=5.3,<5.4
+
+# Other Django-related packages
+django-cors-headers>=4.3,<4.4
+social-auth-app-django>=5.4,<5.5
+python-dotenv>=1.0,<1.1
+
+# External APIs/Services
+twilio>=8.0,<8.1
+stripe>=8.0,<8.1
