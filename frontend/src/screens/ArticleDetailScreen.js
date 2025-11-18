@@ -1,40 +1,32 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native'
-import api from '../api/client'
+import React, { useEffect, useState } from "react";
+import { View, Text, Button } from "react-native";
+import { fetchArticleDetail } from "../api/client";
+import Loading from "../components/Loading";
 
-export default function ArticleDetailScreen({ route }) {
-  const { slug } = route.params
-  const [item, setItem] = useState(null)
-  const [loading, setLoading] = useState(true)
+export default function ArticleDetailScreen({ route, navigation }) {
+  const { id } = route.params;
+  const [article, setArticle] = useState(null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get(`/api/articles/?search=${encodeURIComponent(slug)}`)
-        const list = res.data.results || res.data
-        const found = list.find((a) => a.slug === slug) || null
-        setItem(found)
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [slug])
+    load();
+  }, []);
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 40 }} />
-  if (!item) return <Text style={{ margin: 16 }}>Article not found.</Text>
+  const load = async () => {
+    const data = await fetchArticleDetail(id);
+    setArticle(data);
+  };
+
+  if (!article) return <Loading />;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{item.title}</Text>
-      <Text style={{ marginTop: 12 }}>{item.body}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 16 }}>
-        {(item.categories || []).map((c) => (
-          <Text key={c.id} style={{ marginRight: 8, color: '#666' }}>#{c.name}</Text>
-        ))}
-      </View>
-    </ScrollView>
-  )
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 26, fontWeight: "bold" }}>{article.title}</Text>
+      <Text style={{ marginVertical: 20 }}>{article.content}</Text>
+
+      <Button
+        title="View Comments"
+        onPress={() => navigation.navigate("Comments", { articleId: id })}
+      />
+    </View>
+  );
 }
