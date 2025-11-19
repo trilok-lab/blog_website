@@ -1,12 +1,18 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import generics
+from .models import ContactMessage
+from .serializers import ContactMessageSerializer
+from django.core.mail import send_mail
+from django.conf import settings
 
+class ContactCreateView(generics.CreateAPIView):
+    serializer_class = ContactMessageSerializer
 
-@api_view(["POST"])
-def submit_contact(request):
-    data = request.data or {}
-    # In real-world, validate and persist; here we just echo
-    return Response({"ok": True, "received": data}, status=status.HTTP_200_OK)
-
-# Create your views here.
+    def perform_create(self, serializer):
+        msg = serializer.save()
+        send_mail(
+            subject=f"New Contact Message from {msg.name}",
+            message=msg.message,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[settings.EMAIL_HOST_USER],
+            fail_silently=True
+        )

@@ -4,20 +4,24 @@ from django.utils import timezone
 from django.core.validators import RegexValidator
 import uuid
 
-
 class CustomUser(AbstractUser):
+    """
+    Custom user model with mobile_no and is_admin flag
+    """
     mobile_no = models.CharField(max_length=20, blank=True, null=True, unique=True)
     is_admin = models.BooleanField(default=False)
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.username
 
-
 class PhoneVerification(models.Model):
+    """
+    Stores verification codes for mobile numbers
+    """
     mobile_no = models.CharField(
         max_length=20,
         validators=[RegexValidator(r"^[0-9+\-()\s]+$", "Invalid phone number format")],
-        db_index=True,
+        db_index=True
     )
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(default=timezone.now)
@@ -30,5 +34,3 @@ class PhoneVerification(models.Model):
         self.verified = True
         self.verified_at = timezone.now()
         self.save(update_fields=["verified", "verified_at"])
-
-# Create your models here.

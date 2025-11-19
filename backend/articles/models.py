@@ -1,78 +1,46 @@
 from django.db import models
-from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.utils.text import slugify
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 
+User = get_user_model()
 
 class Category(models.Model):
-    name = models.CharField(max_length=120, unique=True)
-    slug = models.SlugField(max_length=140, unique=True, blank=True)
-
-    class Meta:
-        ordering = ["name"]
-
-    def __str__(self) -> str:
-        return self.name
-
-    @property
-    def permalink(self) -> str:
-        return f"/category/{self.slug}"
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = slugify(self.name)
-            slug = base
-            idx = 1
-            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                idx += 1
-                slug = f"{base}-{idx}"
-            self.slug = slug
+            self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
-    def delete(self, using=None, keep_parents=False):
-        if self.article_set.exists():
-            raise ValidationError("Cannot delete category with related articles.")
-        return super().delete(using=using, keep_parents=keep_parents)
+    def __str__(self):
+        return self.name
 
+    def get_permalink(self):
+        return reverse("articles:category-detail", args=[self.slug])
 
 class Article(models.Model):
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
-    )
-    title = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=220, unique=True, blank=True)
-    excerpt = models.CharField(max_length=280, blank=True)
-    body = models.TextField()
-    image = models.ImageField(upload_to="articles/", blank=True, null=True)
-    categories = models.ManyToManyField(Category, blank=True, related_name="articles")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="articles")
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    description = models.TextField()
+    categories = models.ManyToManyField(Category, related_name="articles")
+    image = models.ImageField(upload_to='articles/', blank=True, null=True)
+    popularity = models.IntegerField(default=0)
+    homepage_slider = models.BooleanField(default=False)
     approved = models.BooleanField(default=False)
-    is_slider = models.BooleanField(default=False)
-    popularity = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return self.title
-
-    @property
-    def permalink(self) -> str:
-        return f"/article/{self.slug}"
-
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = slugify(self.title)
-            slug = base
-            idx = 1
-            while Article.objects.filter(slug=slug).exclude(pk=self.pk).exists():
-                idx += 1
-                slug = f"{base}-{idx}"
-            self.slug = slug
-        if self.author is None:
-            # guest submissions are unapproved until admin approves
-            self.approved = False
+            self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
-# Create your models here.
+    def __str__(self):
+        return self.title
+
+    def get_permalink(self):
+        return reverse("articles:detail", args=[self.slug])

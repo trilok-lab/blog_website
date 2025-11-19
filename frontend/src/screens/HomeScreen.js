@@ -1,14 +1,34 @@
-import React from "react";
-import { View, Text, Button } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, FlatList, Text } from "react-native";
+import { getArticles } from "../api";
+import ArticleCard from "../components/ArticleCard";
+import Loading from "../components/Loading";
 
 export default function HomeScreen({ navigation }) {
-  return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 26 }}>Welcome to the Blog App</Text>
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-      <Button title="Go to Dashboard" onPress={() => navigation.navigate("Dashboard")} />
-      <Button title="View Articles" onPress={() => navigation.navigate("Articles")} />
-      <Button title="Login" onPress={() => navigation.navigate("Login")} />
+  const fetchArticles = async () => {
+    const data = await getArticles();
+    setArticles(data.results);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  if (loading) return <Loading />;
+
+  return (
+    <View style={{ flex: 1, padding: 10 }}>
+      <FlatList
+        data={articles}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <ArticleCard article={item} onPress={(slug) => navigation.navigate("ArticleDetail", { slug })} />
+        )}
+      />
     </View>
   );
 }

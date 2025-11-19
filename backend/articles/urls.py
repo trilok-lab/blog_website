@@ -1,13 +1,12 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import ArticleViewSet, CategoryViewSet
+from django.urls import path
+from .views import ArticleListView, ArticleDetailView, ArticleCreateView, CategoryListView, CategoryDetailView
 
-router = DefaultRouter()
-router.register(r'categories', CategoryViewSet, basename='category')
-router.register(r'', ArticleViewSet, basename='article')
+app_name = 'articles'
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', ArticleListView.as_view(), name='list'),
+    path('create/', ArticleCreateView.as_view(), name='create'),
+    path('<slug:slug>/', ArticleDetailView.as_view(), name='detail'),
+    path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/<slug:slug>/', CategoryDetailView.as_view(), name='category-detail'),
 ]
-
-

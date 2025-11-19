@@ -1,28 +1,42 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Button } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, Button, Alert } from "react-native";
+import { getArticleDetails, submitArticle } from "../../api";
 
 export default function EditArticleScreen({ route, navigation }) {
-  const { article } = route.params;
+  const { slug } = route.params;
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
-  const [title, setTitle] = useState(article.title);
-  const [content, setContent] = useState(article.content);
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        const data = await getArticleDetails(slug);
+        setTitle(data.title);
+        setContent(data.content);
+      } catch (err) {
+        Alert.alert("Error", "Failed to fetch article");
+      }
+    };
+    fetchArticle();
+  }, [slug]);
 
-  const update = () => {
-    alert("Update API not implemented yet.");
-    navigation.goBack();
+  const editArticle = async () => {
+    if (!title || !content) return Alert.alert("Error", "Fill all fields");
+    try {
+      await submitArticle({ title, content, slug });
+      Alert.alert("Success", "Article updated!", [{ text: "OK", onPress: () => navigation.goBack() }]);
+    } catch (err) {
+      Alert.alert("Error", "Failed to update article");
+    }
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 22 }}>Edit Article</Text>
-
-      <TextInput value={title} onChangeText={setTitle}
-        style={{ borderWidth: 1, marginVertical: 10, padding: 8 }} />
-
-      <TextInput value={content} onChangeText={setContent}
-        multiline style={{ borderWidth: 1, height: 150, padding: 8 }} />
-
-      <Button title="Update" onPress={update} />
+      <Text>Title</Text>
+      <TextInput value={title} onChangeText={setTitle} style={{ borderWidth: 1, marginBottom: 10 }} />
+      <Text>Content</Text>
+      <TextInput value={content} onChangeText={setContent} multiline numberOfLines={6} style={{ borderWidth: 1, marginBottom: 10 }} />
+      <Button title="Update Article" onPress={editArticle} />
     </View>
   );
 }

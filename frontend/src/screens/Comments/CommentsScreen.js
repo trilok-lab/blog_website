@@ -1,48 +1,51 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, FlatList } from "react-native";
-import { fetchComments, postComment } from "../api/client";
-import Loading from "../components/Loading";
+import { View, Text, FlatList, TextInput, Button, Alert } from "react-native";
+import { getComments, postComment } from "../api";
 
 export default function CommentsScreen({ route }) {
   const { articleId } = route.params;
-  const [comments, setComments] = useState(null);
+  const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const load = async () => {
-    const data = await fetchComments(articleId);
+  const fetchComments = async () => {
+    const data = await getComments(articleId);
     setComments(data);
   };
 
-  const submit = async () => {
-    await postComment(articleId, text);
-    setText("");
-    load();
+  useEffect(() => {
+    fetchComments();
+  }, [articleId]);
+
+  const submitComment = async () => {
+    if (!text) return;
+    try {
+      await postComment(articleId, text);
+      setText("");
+      fetchComments();
+    } catch (err) {
+      Alert.alert("Error", "Failed to post comment");
+    }
   };
 
-  if (!comments) return <Loading />;
-
   return (
-    <View style={{ padding: 20 }}>
+    <View style={{ flex: 1, padding: 10 }}>
       <FlatList
         data={comments}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <Text style={{ marginBottom: 10 }}>• {item.text}</Text>
+          <View style={{ marginBottom: 5, borderBottomWidth: 1, paddingBottom: 5 }}>
+            <Text style={{ fontWeight: "bold" }}>{item.user}</Text>
+            <Text>{item.text}</Text>
+          </View>
         )}
       />
-
       <TextInput
         value={text}
         onChangeText={setText}
-        placeholder="Write a comment"
-        style={{ borderWidth: 1, padding: 8, marginVertical: 10 }}
+        placeholder="Write a comment..."
+        style={{ borderWidth: 1, marginVertical: 10, padding: 5 }}
       />
-
-      <Button title="Post Comment" onPress={submit} />
+      <Button title="Post Comment" onPress={submitComment} />
     </View>
   );
 }

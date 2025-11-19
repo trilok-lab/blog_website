@@ -3,53 +3,41 @@ import api from "./client";
 // =========================
 // AUTH / ACCOUNTS
 // =========================
-
-// Request OTP
 export const requestPhoneCode = async (phone) => {
-  const res = await api.post("/auth/request-phone-code/", { phone });
+  const res = await api.post("/auth/request-phone-code/", { mobile_no: phone });
   return res.data;
 };
 
-// Verify OTP
-export const verifyPhoneCode = async (phone, code) => {
-  const res = await api.post("/auth/verify-phone-code/", { phone, code });
+export const verifyPhoneCode = async (session_id, code) => {
+  const res = await api.post("/auth/verify-phone-code/", { session_id, code });
   return res.data;
 };
 
-// Register user
 export const registerUser = async (userData) => {
   const res = await api.post("/auth/register/", userData);
   return res.data;
 };
 
-// JWT Login
 export const loginUser = async (username, password) => {
-  const res = await api.post("/auth/jwt/create/", {
-    username,
-    password,
-  });
+  const res = await api.post("/auth/jwt/create/", { username, password });
   return res.data;
 };
 
 // =========================
 // ARTICLES
 // =========================
-
-// List all articles
-export const getArticles = async () => {
-  const res = await api.get("/api/");
+export const getArticles = async (page = 1) => {
+  const res = await api.get(`/articles/?page=${page}`);
   return res.data;
 };
 
-// Get single article
-export const getArticleDetails = async (id) => {
-  const res = await api.get(`/api/${id}/`);
+export const getArticleDetails = async (slug) => {
+  const res = await api.get(`/articles/${slug}/`);
   return res.data;
 };
 
-// Submit article (requires auth)
 export const submitArticle = async (formData) => {
-  const res = await api.post("/api/", formData, {
+  const res = await api.post("/articles/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
@@ -58,16 +46,13 @@ export const submitArticle = async (formData) => {
 // =========================
 // COMMENTS
 // =========================
-
-// List comments for an article
 export const getComments = async (articleId) => {
-  const res = await api.get(`/api/comments/comments/?article=${articleId}`);
+  const res = await api.get(`/comments/comments/?article=${articleId}`);
   return res.data;
 };
 
-// Post a comment
 export const postComment = async (articleId, text) => {
-  const res = await api.post("/api/comments/comments/", {
+  const res = await api.post("/comments/comments/create/", {
     article: articleId,
     text,
   });
@@ -75,19 +60,17 @@ export const postComment = async (articleId, text) => {
 };
 
 // =========================
-// CONTACT FORM
+// CONTACT
 // =========================
-
 export const submitContact = async (data) => {
-  const res = await api.post("/api/contact/submit/", data);
+  const res = await api.post("/contact/submit/", data);
   return res.data;
 };
 
 // =========================
-// THEME SETTINGS
+// STRIPE PAYMENT
 // =========================
-
-export const getTheme = async () => {
-  const res = await api.get("/api/theming/setting/");
+export const createPaymentIntent = async (amount) => {
+  const res = await api.post("/stripe_integration/create-payment-intent/", { amount });
   return res.data;
 };

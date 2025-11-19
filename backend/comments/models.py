@@ -1,23 +1,17 @@
 from django.db import models
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from articles.models import Article
 from django.utils import timezone
 
+User = get_user_model()
 
 class Comment(models.Model):
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    author_name = models.CharField(max_length=120, blank=True)
-    author_mobile = models.CharField(max_length=20, blank=True)
-    body = models.TextField()
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    text = models.TextField()
     approved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
+    guest_mobile_no = models.CharField(max_length=20, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        ordering = ["created_at"]
-
-    def __str__(self) -> str:
-        who = self.user.username if self.user else self.author_name or "Guest"
-        return f"Comment by {who} on {self.article.title}"
-
-# Create your models here.
+    def __str__(self):
+        return f"Comment on {self.article.title} by {self.user or self.guest_mobile_no}"

@@ -1,77 +1,43 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert, ActivityIndicator } from "react-native";
-import { createArticle } from "../api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, Text, TextInput, Button, Alert, Image, TouchableOpacity } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { submitArticle } from "../../api";
 
 export default function SubmitArticleScreen({ navigation }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 1 });
+    if (!result.canceled) setImage(result.assets[0].uri);
+  };
 
   const submit = async () => {
-    if (!title || !content) {
-      Alert.alert("Error", "Please enter both title and content");
-      return;
-    }
-
-    setLoading(true);
-
+    if (!title || !content) return Alert.alert("Error", "Fill all fields");
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    if (image) formData.append("image", { uri: image, name: "article.jpg", type: "image/jpeg" });
     try {
-      // Retrieve token
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        Alert.alert("Not Logged In", "Please login to submit an article");
-        setLoading(false);
-        return;
-      }
-
-      // Submit article
-      const res = await createArticle(title, content);
-      console.log("Article submitted:", res);
-
-      Alert.alert("Success", "Article submitted successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.navigate("Articles"),
-        },
-      ]);
-
-      // Reset form
-      setTitle("");
-      setContent("");
+      await submitArticle(formData);
+      Alert.alert("Success", "Article submitted!", [{ text: "OK", onPress: () => navigation.goBack() }]);
     } catch (err) {
-      console.log("Submit error:", err.response?.data || err.message);
-      Alert.alert(
-        "Submission Failed",
-        err.response?.data?.message || "Could not submit article"
-      );
-    } finally {
-      setLoading(false);
+      Alert.alert("Error", "Failed to submit article");
     }
   };
 
   return (
     <View style={{ padding: 20 }}>
       <Text>Title</Text>
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 5 }}
-      />
-
+      <TextInput value={title} onChangeText={setTitle} style={{ borderWidth: 1, marginBottom: 10 }} />
       <Text>Content</Text>
-      <TextInput
-        value={content}
-        onChangeText={setContent}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 5, height: 100 }}
-        multiline
-      />
-
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : (
-        <Button title="Submit Article" onPress={submit} />
-      )}
+      <TextInput value={content} onChangeText={setContent} multiline numberOfLines={6} style={{ borderWidth: 1, marginBottom: 10 }} />
+      <TouchableOpacity onPress={pickImage} style={{ marginBottom: 10, padding: 10, backgroundColor: "#ddd" }}>
+        <Text>Select Image</Text>
+      </TouchableOpacity>
+      {image && <Image source={{ uri: image }} style={{ width: 100, height: 100, marginBottom: 10 }} />}
+      <Button title="Submit Article" onPress={submit} />
     </View>
   );
 }

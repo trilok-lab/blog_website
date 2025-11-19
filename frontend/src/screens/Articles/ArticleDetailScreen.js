@@ -1,32 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button } from "react-native";
-import { fetchArticleDetail } from "../api/client";
-import Loading from "../components/Loading";
+import { View, Text, Image, ScrollView, Button } from "react-native";
+import { getArticleDetails } from "../../api";
 
 export default function ArticleDetailScreen({ route, navigation }) {
-  const { id } = route.params;
+  const { slug } = route.params;
   const [article, setArticle] = useState(null);
 
   useEffect(() => {
-    load();
-  }, []);
+    const fetchArticle = async () => {
+      const data = await getArticleDetails(slug);
+      setArticle(data);
+    };
+    fetchArticle();
+  }, [slug]);
 
-  const load = async () => {
-    const data = await fetchArticleDetail(id);
-    setArticle(data);
-  };
-
-  if (!article) return <Loading />;
+  if (!article) return <Text>Loading...</Text>;
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 26, fontWeight: "bold" }}>{article.title}</Text>
-      <Text style={{ marginVertical: 20 }}>{article.content}</Text>
-
-      <Button
-        title="View Comments"
-        onPress={() => navigation.navigate("Comments", { articleId: id })}
-      />
-    </View>
+    <ScrollView style={{ padding: 10 }}>
+      {article.image && <Image source={{ uri: article.image }} style={{ width: "100%", height: 200 }} />}
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginVertical: 10 }}>{article.title}</Text>
+      <Text>{article.content}</Text>
+      <Button title="View Comments" onPress={() => navigation.navigate("Comments", { articleId: article.id })} />
+    </ScrollView>
   );
 }

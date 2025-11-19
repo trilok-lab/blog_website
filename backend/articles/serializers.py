@@ -1,40 +1,20 @@
 from rest_framework import serializers
 from .models import Article, Category
 
-
 class CategorySerializer(serializers.ModelSerializer):
-    permalink = serializers.ReadOnlyField()
-
     class Meta:
         model = Category
-        fields = ["id", "name", "slug", "permalink"]
-
+        fields = ['id', 'name', 'slug']
 
 class ArticleSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
-    category_ids = serializers.PrimaryKeyRelatedField(
-        many=True, write_only=True, queryset=Category.objects.all(), source="categories"
-    )
-    permalink = serializers.ReadOnlyField()
+    author = serializers.StringRelatedField(read_only=True)
+    permalink = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
-        fields = [
-            "id",
-            "title",
-            "slug",
-            "excerpt",
-            "body",
-            "image",
-            "categories",
-            "category_ids",
-            "approved",
-            "is_slider",
-            "popularity",
-            "permalink",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["approved"]
+        fields = ['id', 'title', 'slug', 'description', 'author', 'categories', 'image',
+                  'popularity', 'homepage_slider', 'approved', 'created_at', 'updated_at', 'permalink']
 
-
+    def get_permalink(self, obj):
+        return obj.get_permalink()

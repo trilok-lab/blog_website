@@ -1,35 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
-import { fetchArticles } from "../api/client";
-import Loading from "../components/Loading";
+import { View, FlatList } from "react-native";
+import { getArticles } from "../../api";
+import ArticleCard from "../../components/ArticleCard";
+import Loading from "../../components/Loading";
 
-export default function ArticleListScreen({ navigation }) {
-  const [articles, setArticles] = useState(null);
+export default function ArticlesListScreen({ navigation }) {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const load = async () => {
-    const data = await fetchArticles();
-    setArticles(data);
+  const fetchArticles = async () => {
+    const data = await getArticles();
+    setArticles(data.results);
+    setLoading(false);
   };
 
-  if (!articles) return <Loading />;
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  if (loading) return <Loading />;
 
   return (
-    <View style={{ padding: 20 }}>
+    <View style={{ flex: 1, padding: 10 }}>
       <FlatList
         data={articles}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ArticleDetail", { id: item.id })}
-          >
-            <Text style={{ fontSize: 20, fontWeight: "bold" }}>{item.title}</Text>
-            <Text style={{ color: "blue" }}>Read more...</Text>
-            <View style={{ marginBottom: 20 }} />
-          </TouchableOpacity>
+          <ArticleCard article={item} onPress={(slug) => navigation.navigate("ArticleDetail", { slug })} />
         )}
       />
     </View>
