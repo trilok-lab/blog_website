@@ -1,76 +1,37 @@
-import api from "./client";
+import client from "./client";
 
-// =========================
-// AUTH / ACCOUNTS
-// =========================
-export const requestPhoneCode = async (phone) => {
-  const res = await api.post("/auth/request-phone-code/", { mobile_no: phone });
-  return res.data;
-};
+/** ===== AUTH APIs ===== **/
 
-export const verifyPhoneCode = async (session_id, code) => {
-  const res = await api.post("/auth/verify-phone-code/", { session_id, code });
-  return res.data;
-};
+export const loginUser = async (data) => client.post("/auth/jwt/create/", data);
+export const refreshToken = async (refresh) => client.post("/auth/jwt/refresh/", { refresh });
+export const signupUser = async (data) => client.post("/accounts/register/", data);
+export const verifyOTP = async (data) => client.post("/accounts/verify-otp/", data);
 
-export const registerUser = async (userData) => {
-  const res = await api.post("/auth/register/", userData);
-  return res.data;
-};
+/** ===== ARTICLES APIs ===== **/
 
-export const loginUser = async (username, password) => {
-  const res = await api.post("/auth/jwt/create/", { username, password });
-  return res.data;
-};
+export const getArticles = async (page = 1) => client.get(`/articles/list/?page=${page}`);
+export const getArticleDetail = async (slug) => client.get(`/articles/${slug}/`);
+export const createArticle = async (data, token) => client.post("/articles/create/", data, { headers: { Authorization: `Bearer ${token}` }});
+export const updateArticle = async (slug, data, token) => client.put(`/articles/${slug}/update/`, data, { headers: { Authorization: `Bearer ${token}` }});
+export const submitArticleStripe = async (data, token) => client.post("/stripe/submit-article/", data, { headers: { Authorization: `Bearer ${token}` }});
 
-// =========================
-// ARTICLES
-// =========================
-export const getArticles = async (page = 1) => {
-  const res = await api.get(`/articles/?page=${page}`);
-  return res.data;
-};
+/** ===== COMMENTS APIs ===== **/
 
-export const getArticleDetails = async (slug) => {
-  const res = await api.get(`/articles/${slug}/`);
-  return res.data;
-};
+export const submitComment = async (articleId, data) => client.post(`/comments/${articleId}/submit/`, data);
+export const getComments = async (articleId) => client.get(`/comments/${articleId}/list/`);
 
-export const submitArticle = async (formData) => {
-  const res = await api.post("/articles/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return res.data;
-};
+/** ===== CONTACT APIs ===== **/
 
-// =========================
-// COMMENTS
-// =========================
-export const getComments = async (articleId) => {
-  const res = await api.get(`/comments/comments/?article=${articleId}`);
-  return res.data;
-};
+export const sendContactMessage = async (data) => client.post("/contact/send/", data);
 
-export const postComment = async (articleId, text) => {
-  const res = await api.post("/comments/comments/create/", {
-    article: articleId,
-    text,
-  });
-  return res.data;
-};
+/** ===== ADMIN APIs ===== **/
 
-// =========================
-// CONTACT
-// =========================
-export const submitContact = async (data) => {
-  const res = await api.post("/contact/submit/", data);
-  return res.data;
-};
+export const getAllArticles = async () => client.get("/articles/admin/list/");
+export const approveArticle = async (id) => client.post(`/articles/admin/${id}/approve/`);
+export const getCategories = async () => client.get("/articles/categories/list/");
+export const createCategory = async (data) => client.post("/articles/categories/create/", data);
+export const deleteCategory = async (id) => client.delete(`/articles/categories/${id}/delete/`);
 
-// =========================
-// STRIPE PAYMENT
-// =========================
-export const createPaymentIntent = async (amount) => {
-  const res = await api.post("/stripe_integration/create-payment-intent/", { amount });
-  return res.data;
-};
+/** ===== NOTIFICATIONS ===== **/
+
+export const getNotifications = async () => client.get("/notifications/list/");

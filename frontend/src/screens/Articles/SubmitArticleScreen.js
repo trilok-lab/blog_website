@@ -1,43 +1,40 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert, Image, TouchableOpacity } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { submitArticle } from "../../api";
+import { View, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { submitArticleStripe } from "../../api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SubmitArticleScreen({ navigation }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [image, setImage] = useState(null);
+  const [categories, setCategories] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 1 });
-    if (!result.canceled) setImage(result.assets[0].uri);
-  };
-
-  const submit = async () => {
-    if (!title || !content) return Alert.alert("Error", "Fill all fields");
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    if (image) formData.append("image", { uri: image, name: "article.jpg", type: "image/jpeg" });
+  const handlePaymentAndSubmit = async () => {
+    setLoading(true);
+    const token = await AsyncStorage.getItem("token");
     try {
-      await submitArticle(formData);
-      Alert.alert("Success", "Article submitted!", [{ text: "OK", onPress: () => navigation.goBack() }]);
-    } catch (err) {
-      Alert.alert("Error", "Failed to submit article");
+      const res = await submitArticleStripe({ title, content, categories: categories.split(",") }, token);
+      Alert.alert("Payment Successful! Article submitted.");
+      navigation.navigate("ArticlesList");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Submission failed", error.response?.data || "Try again");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Title</Text>
-      <TextInput value={title} onChangeText={setTitle} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Content</Text>
-      <TextInput value={content} onChangeText={setContent} multiline numberOfLines={6} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <TouchableOpacity onPress={pickImage} style={{ marginBottom: 10, padding: 10, backgroundColor: "#ddd" }}>
-        <Text>Select Image</Text>
-      </TouchableOpacity>
-      {image && <Image source={{ uri: image }} style={{ width: 100, height: 100, marginBottom: 10 }} />}
-      <Button title="Submit Article" onPress={submit} />
+    <View style={styles.container}>
+      <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={styles.input} />
+      <TextInput placeholder="Content" value={content} onChangeText={setContent} style={[styles.input, { height: 150 }]} multiline />
+      <TextInput placeholder="Categories (comma-separated)" value={categories} onChangeText={setCategories} style={styles.input} />
+      <Button title={loading ? "Processing..." : "Pay & Submit Article"} onPress={handlePaymentAndSubmit} disabled={loading} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 15, borderRadius: 5 },
+});

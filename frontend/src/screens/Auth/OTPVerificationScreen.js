@@ -1,33 +1,42 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert } from "react-native";
-import { verifyPhoneCode } from "../../api";
+import { View, TextInput, Button, Text, StyleSheet, Alert } from "react-native";
+import { verifyOTP } from "../../api";
 
 export default function OTPVerificationScreen({ route, navigation }) {
-  const { session_id } = route.params;
-  const [code, setCode] = useState("");
+  const { email } = route.params;
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const verifyOTP = async () => {
-    if (!code) return Alert.alert("Error", "Enter OTP code");
+  const handleVerify = async () => {
+    setLoading(true);
     try {
-      await verifyPhoneCode(session_id, code);
-      Alert.alert("Success", "Phone verified!", [
-        { text: "OK", onPress: () => navigation.navigate("Signup") },
-      ]);
-    } catch (err) {
-      Alert.alert("Verification Failed", err.response?.data?.detail || "Invalid code");
+      await verifyOTP({ email, otp });
+      Alert.alert("Mobile verified! You can login now.");
+      navigation.replace("Login");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Verification Failed", error.response?.data || "Try again");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Enter OTP sent to your phone</Text>
+    <View style={styles.container}>
+      <Text>Enter OTP sent to your mobile</Text>
       <TextInput
-        value={code}
-        onChangeText={setCode}
-        keyboardType="number-pad"
-        style={{ borderWidth: 1, marginBottom: 10, padding: 5 }}
+        placeholder="OTP"
+        value={otp}
+        onChangeText={setOtp}
+        style={styles.input}
+        keyboardType="numeric"
       />
-      <Button title="Verify OTP" onPress={verifyOTP} />
+      <Button title={loading ? "Verifying..." : "Verify"} onPress={handleVerify} disabled={loading} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: "center" },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 15, borderRadius: 5 },
+});

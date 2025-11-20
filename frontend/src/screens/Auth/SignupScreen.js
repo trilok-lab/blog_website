@@ -1,35 +1,38 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, Alert } from "react-native";
-import { registerUser } from "../../api";
+import { View, TextInput, Button, Text, StyleSheet, Alert } from "react-native";
+import { signupUser } from "../../api";
 
 export default function SignupScreen({ navigation }) {
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [mobileNo, setMobileNo] = useState("");
   const [password, setPassword] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const signup = async () => {
-    if (!username || !email || !mobileNo || !password)
-      return Alert.alert("Error", "Fill all fields");
+  const handleSignup = async () => {
+    setLoading(true);
     try {
-      await registerUser({ username, email, mobile_no: mobileNo, password });
-      Alert.alert("Success", "Account created!", [{ text: "OK", onPress: () => navigation.navigate("Login") }]);
-    } catch (err) {
-      Alert.alert("Signup Failed", err.response?.data?.detail || "Error");
+      await signupUser({ email, password, mobile_no: mobile });
+      Alert.alert("Signup successful! Verify OTP sent to mobile.");
+      navigation.navigate("OTPVerification", { email });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Signup Failed", error.response?.data || "Try again");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Username</Text>
-      <TextInput value={username} onChangeText={setUsername} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Email</Text>
-      <TextInput value={email} onChangeText={setEmail} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Mobile No</Text>
-      <TextInput value={mobileNo} onChangeText={setMobileNo} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Password</Text>
-      <TextInput value={password} secureTextEntry onChangeText={setPassword} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Button title="Signup" onPress={signup} />
+    <View style={styles.container}>
+      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} />
+      <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
+      <TextInput placeholder="Mobile Number" value={mobile} onChangeText={setMobile} style={styles.input} keyboardType="phone-pad" />
+      <Button title={loading ? "Signing up..." : "Sign Up"} onPress={handleSignup} disabled={loading} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: "center" },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 15, borderRadius: 5 },
+});

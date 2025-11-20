@@ -8,25 +8,33 @@ export default function HomeScreen({ navigation }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchArticles = async () => {
-    const data = await getArticles();
-    setArticles(data.results);
-    setLoading(false);
-  };
-
   useEffect(() => {
     fetchArticles();
   }, []);
 
+  const fetchArticles = async () => {
+    try {
+      const response = await getArticles({ page: 1 });
+      setArticles(response.data.results);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <Loading />;
 
   return (
-    <View style={{ flex: 1, padding: 10 }}>
+    <View>
       <FlatList
         data={articles}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <ArticleCard article={item} onPress={(slug) => navigation.navigate("ArticleDetail", { slug })} />
+          <ArticleCard
+            article={item}
+            onPress={() => navigation.navigate("ArticleDetail", { id: item.id })}
+          />
         )}
       />
     </View>

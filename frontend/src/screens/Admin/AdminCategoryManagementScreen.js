@@ -1,41 +1,60 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, FlatList, Alert } from "react-native";
-import api from "../../api/client";
+import { View, TextInput, Button, FlatList, Text, StyleSheet, Alert } from "react-native";
+import { getCategories, createCategory, deleteCategory } from "../../api";
 
 export default function AdminCategoryManagementScreen() {
   const [categories, setCategories] = useState([]);
   const [name, setName] = useState("");
 
-  const fetchCategories = async () => {
-    const res = await api.get("/articles/categories/");
-    setCategories(res.data);
-  };
-
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  const addCategory = async () => {
+  const fetchCategories = async () => {
+    const res = await getCategories();
+    setCategories(res.data);
+  };
+
+  const handleCreate = async () => {
     if (!name) return;
     try {
-      await api.post("/articles/categories/", { name });
+      await createCategory({ name });
       setName("");
       fetchCategories();
-    } catch (err) {
-      Alert.alert("Error", "Failed to add category");
+    } catch (error) {
+      Alert.alert("Cannot create category");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteCategory(id);
+      fetchCategories();
+    } catch (error) {
+      Alert.alert("Cannot delete category. It might have articles.");
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Add Category</Text>
-      <TextInput value={name} onChangeText={setName} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Button title="Add" onPress={addCategory} />
+    <View style={styles.container}>
+      <TextInput placeholder="New Category Name" value={name} onChangeText={setName} style={styles.input} />
+      <Button title="Add Category" onPress={handleCreate} />
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <Text style={{ padding: 5 }}>{item.name}</Text>}
+        renderItem={({ item }) => (
+          <View style={styles.categoryItem}>
+            <Text>{item.name}</Text>
+            <Button title="Delete" onPress={() => handleDelete(item.id)} />
+          </View>
+        )}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 10, borderRadius: 5 },
+  categoryItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 10, borderBottomWidth: 1, borderBottomColor: "#eee" },
+});

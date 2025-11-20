@@ -1,8 +1,9 @@
-from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 
-class IsAdminOrOwner(permissions.BasePermission):
+class IsAdminUserCustom(BasePermission):
     """
-    Custom permission to allow access to admin or owner of the object
+    Allows access only to admin users.
     """
-    def has_object_permission(self, request, view, obj):
-        return request.user.is_authenticated and (request.user.is_admin or obj.user == request.user)
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_admin)

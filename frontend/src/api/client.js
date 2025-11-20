@@ -1,18 +1,21 @@
 import axios from "axios";
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/", // Django backend URL
-  headers: { "Content-Type": "application/json" },
+const API_BASE_URL = Constants.expoConfig.extra.API_BASE_URL;
+
+const client = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Add JWT token automatically
-api.interceptors.request.use(async (config) => {
+client.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-export default api;
+export default client

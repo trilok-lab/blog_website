@@ -1,18 +1,20 @@
 import React from "react";
-import { View, Text, Button, Alert } from "react-native";
+import { View, Text, Button, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SettingsScreen({ navigation }) {
-  const logout = async () => {
+  const handleLogout = async () => {
     await AsyncStorage.removeItem("token");
-    Alert.alert("Logged Out");
-    navigation.navigate("Login");
+    Alert.alert("Logged out successfully");
+    navigation.replace("Login");
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 20 }}>Settings</Text>
-      <Button title="Logout" onPress={logout} />
+    <View style={styles.container}>
+      <Text style={styles.title}>Settings</Text>
+      <Button title="Logout" onPress={handleLogout} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({ container: { flex: 1, justifyContent: "center", padding: 20 }, title: { fontSize: 24, marginBottom: 20, textAlign: "center" } });

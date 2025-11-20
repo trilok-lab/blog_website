@@ -1,42 +1,52 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, Alert } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { getProfile, updateProfile } from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../../api/client";
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState({ username: "", email: "", mobile_no: "" });
-
-  const fetchProfile = async () => {
-    try {
-      const res = await api.get("/auth/profile/");
-      setProfile(res.data);
-    } catch (err) {
-      Alert.alert("Error", "Failed to fetch profile");
-    }
-  };
+  const [profile, setProfile] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProfile();
   }, []);
 
-  const updateProfile = async () => {
+  const fetchProfile = async () => {
+    const token = await AsyncStorage.getItem("token");
     try {
-      await api.put("/auth/profile/update/", profile);
-      Alert.alert("Success", "Profile updated");
-    } catch (err) {
-      Alert.alert("Error", "Failed to update profile");
+      const res = await getProfile(token);
+      setProfile(res.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleUpdate = async () => {
+    const token = await AsyncStorage.getItem("token");
+    try {
+      await updateProfile(profile, token);
+      Alert.alert("Profile updated successfully");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Update failed");
+    }
+  };
+
+  if (loading) return <Text>Loading...</Text>;
+
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Username</Text>
-      <TextInput value={profile.username} onChangeText={(v) => setProfile({ ...profile, username: v })} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Email</Text>
-      <TextInput value={profile.email} onChangeText={(v) => setProfile({ ...profile, email: v })} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Text>Mobile No</Text>
-      <TextInput value={profile.mobile_no} onChangeText={(v) => setProfile({ ...profile, mobile_no: v })} style={{ borderWidth: 1, marginBottom: 10 }} />
-      <Button title="Update Profile" onPress={updateProfile} />
+    <View style={styles.container}>
+      <TextInput style={styles.input} value={profile.first_name} onChangeText={(text) => setProfile({ ...profile, first_name: text })} placeholder="First Name" />
+      <TextInput style={styles.input} value={profile.last_name} onChangeText={(text) => setProfile({ ...profile, last_name: text })} placeholder="Last Name" />
+      <TextInput style={styles.input} value={profile.email} editable={false} placeholder="Email" />
+      <Button title="Update Profile" onPress={handleUpdate} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 15, borderRadius: 5 },
+});
