@@ -2,7 +2,7 @@
 node_modules/
 
 # Python virtual environment
-.venv/
+venv/
 
 # Expo/React Native caches
 .expo/

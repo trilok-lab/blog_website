@@ -12,7 +12,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     category_ids = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), many=True, write_only=True, source='categories'
     )
-    permalink = serializers.CharField(source='permalink', read_only=True)
+#    permalink = serializers.CharField(source='permalink', read_only=True)
 
     class Meta:
         model = Article
