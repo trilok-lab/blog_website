@@ -1,8 +1,8 @@
+# theming/urls.py
 from django.urls import path
-from .views import theme_setting
+from .views import get_theme, set_theme
 
 urlpatterns = [
-    path('setting/', theme_setting, name='theme-setting'),
+    path("setting/", get_theme, name="get-theme"),
+    path("setting/change/", set_theme, name="set-theme"),
 ]
-
-

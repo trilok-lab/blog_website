@@ -1,52 +1,101 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated, AllowAny
+# comments/views.py
+from rest_framework import viewsets, serializers
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.decorators import action
+
+from django.utils import timezone
+
 from .models import Comment
 from .serializers import CommentSerializer
-from accounts.permissions import IsAdminUserCustom
+from accounts.models import PhoneVerification
 from articles.models import Article
-from twilio.rest import Client
-from django.conf import settings
 
-# List & Create Comments
-class CommentListCreateView(generics.ListCreateAPIView):
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """
+    Public comment endpoints:
+    - GET list (approved only)
+    - POST create (guest or signed-in user)
+    - GET retrieve
+    Update/delete => admin only (handled in admin_features)
+    """
+
+    queryset = Comment.objects.select_related("article", "user").all()
     serializer_class = CommentSerializer
-    permission_classes = [AllowAny]
 
-    def get_queryset(self):
-        article_id = self.request.query_params.get("article")
-        if article_id:
-            return Comment.objects.filter(article_id=article_id, is_approved=True)
-        return Comment.objects.filter(is_approved=True)
+    def get_permissions(self):
+        if self.action in ["list", "retrieve", "create"]:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
+    # --------------------------------------
+    # LIST COMMENTS (public)
+    # --------------------------------------
+    def list(self, request, *args, **kwargs):
+        """
+        GET /api/comments/?article=<id or slug>
+        Returns approved comments only.
+        """
+        article_id_or_slug = request.query_params.get("article")
+
+        qs = Comment.objects.filter(approved=True)
+
+        if article_id_or_slug:
+            # Try slug first, then pk
+            qs = qs.filter(article__slug=article_id_or_slug) | qs.filter(article_id=article_id_or_slug)
+
+        serializer = self.get_serializer(qs.order_by("-created_at"), many=True)
+        return Response(serializer.data)
+
+    # --------------------------------------
+    # CREATE COMMENT (guest or signed in)
+    # --------------------------------------
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None
-        guest_name = self.request.data.get("guest_name")
+
+        if user:  
+            # Admin auto approves, normal users need approval
+            is_auto_approved = getattr(user, "is_admin", False)
+            serializer.save(user=user, approved=is_auto_approved)
+            return
+
+        # Guest submission
+        session_id = self.request.data.get("verification_session_id")
+        if not session_id:
+            raise serializers.ValidationError({"detail": "Phone verification required for guest comments"})
+
+        try:
+            pv = PhoneVerification.objects.get(session_id=session_id)
+        except PhoneVerification.DoesNotExist:
+            raise serializers.ValidationError({"detail": "Invalid verification session"})
+
+        if not pv.verified or pv.is_expired():
+            raise serializers.ValidationError({"detail": "Phone not verified or expired"})
+
+        # Mobile must match guest_mobile (if provided)
         guest_mobile = self.request.data.get("guest_mobile")
+        if guest_mobile and guest_mobile != pv.mobile_no:
+            raise serializers.ValidationError({"detail": "Guest mobile must match verified number"})
 
-        # For guest users, verify mobile via Twilio
-        if not user:
-            if not guest_name or not guest_mobile:
-                raise serializers.ValidationError("Guest name and mobile required.")
-            # Optionally, verify OTP here using Twilio API
-            # client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-            # send verification code etc.
+        serializer.save(
+            user=None,
+            guest_name=self.request.data.get("guest_name"),
+            guest_mobile=pv.mobile_no,
+            approved=False   # guest comments require admin approval
+        )
 
-        serializer.save(user=user, guest_name=guest_name, guest_mobile=guest_mobile, is_approved=user.is_staff if user else False)
-
-# Approve/Reject Comments (Admin)
-class CommentApproveView(generics.UpdateAPIView):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsAdminUserCustom]
-
-    def update(self, request, *args, **kwargs):
-        comment = self.get_object()
-        action = request.data.get("action")
-        if action not in ["approve", "reject"]:
-            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
-        comment.is_approved = True if action == "approve" else False
-        comment.save()
-        serializer = self.get_serializer(comment)
+    # --------------------------------------
+    # OPTIONAL: helper endpoints for mobile client
+    # --------------------------------------
+    @action(detail=False, methods=["get"], url_path="by-article")
+    def by_article(self, request):
+        """
+        GET /api/comments/by-article/?slug=xxx
+        """
+        slug = request.query_params.get("slug")
+        if not slug:
+            return Response({"detail": "slug required"}, status=400)
+        comments = Comment.objects.filter(article__slug=slug, approved=True)
+        serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)

@@ -1,8 +1,9 @@
+# contact/urls.py
 from django.urls import path
-from .views import ContactCreateView, ContactListView, ContactUpdateView
+from .views import ContactCreateView, ContactListAdminView, ContactReadUpdateView
 
 urlpatterns = [
-    path("", ContactCreateView.as_view(), name="contact-create"),
-    path("admin/list/", ContactListView.as_view(), name="contact-list"),
-    path("<int:pk>/update/", ContactUpdateView.as_view(), name="contact-update"),
+    path("submit/", ContactCreateView.as_view(), name="contact-submit"),
+    path("admin/list/", ContactListAdminView.as_view(), name="contact-admin-list"),
+    path("<int:pk>/read/", ContactReadUpdateView.as_view(), name="contact-read-update"),
 ]

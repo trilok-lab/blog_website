@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
@@ -11,13 +12,18 @@ urlpatterns = [
     path("auth/jwt/create/", TokenObtainPairView.as_view(), name="jwt-create"),
     path("auth/jwt/refresh/", TokenRefreshView.as_view(), name="jwt-refresh"),
 
-    # Apps
+    # Accounts
     path("auth/", include("accounts.urls")),
-    path("articles/", include("articles.urls")),
-    path("comments/", include("comments.urls")),
-    path("contact/", include("contact.urls")),
-    path("payments/", include("stripe_integration.urls")),
-    path("notifications/", include("notifications.urls")),
+
+    # Public APIs
+    path("api/articles/", include("articles.urls")),
+    path("api/comments/", include("comments.urls")),
+    path("api/contact/", include("contact.urls")),
+    path("api/theming/", include("theming.urls")),
+    path("api/payments/", include("payments.urls")),
+
+    # Admin APIs (protected via middleware)
+    path("api/admin/", include("admin_features.urls")),
 ]
 
 if settings.DEBUG:
