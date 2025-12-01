@@ -15,24 +15,18 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 
 # ALLOWED HOSTS
-ALLOWED_HOSTS = env.list(
-    "ALLOWED_HOSTS",
-    default=[
-        "127.0.0.1",
-        "localhost",
-        "192.168.10.7",
-    ]
-)
+ALLOWED_HOSTS = ["*"]
 
 # CSRF
-CSRF_TRUSTED_ORIGINS = env.list(
-    "CSRF_TRUSTED_ORIGINS",
-    default=[
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-        "http://192.168.10.7:8000",
-    ]
-)
+CSRF_TRUSTED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "http://192.168.10.7:8000",
+    "https://*.loca.lt",
+    "https://*.ngrok-free.app",
+    "https://*.exp.direct",
+    "https://*.expo.dev",
+]
 
 # DATABASE
 DATABASES = {"default": env.db()}
