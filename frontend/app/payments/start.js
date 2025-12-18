@@ -1,51 +1,73 @@
+// frontend/app/payments/start.js
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import client from "../../src/api/client";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
+import { startPayment } from "../../src/api/payments";
 
 export default function StartPayment() {
-  const [amount, setAmount] = useState("199"); // cents by default
-  const [currency, setCurrency] = useState("usd");
-  const [title, setTitle] = useState("");
+  const router = useRouter();
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const start = async () => {
+  const onStart = async () => {
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert("Invalid amount", "Please enter a numeric amount.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await client.post("/api/payments/checkout-session/", { amount: Number(amount), currency, article_title: title });
-      // res contains { payment_id, session_id, url }
-      Alert.alert("Checkout", "Open checkout url in browser on device");
-      // Open url using Linking
-      const { url } = res.data;
-      if (url) {
-        // Try open in-device browser
-        const Linking = require("react-native").Linking;
-        Linking.openURL(url);
+      const amountCents = Math.round(Number(amount) * 100);
+      const payload = { amount_cents: amountCents, description: description || `Payment of ${amount}` };
+      const res = await startPayment(payload);
+      const data = res.data || {};
+      const paymentId = data.id || data.payment_id || null;
+      const checkoutUrl = data.checkout_url || data.payment_url || data.url || null;
+
+      if (!paymentId) {
+        Alert.alert("Error", "Payment id not returned by backend.");
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Error", err.response?.data?.error || "Checkout failed");
+
+      if (checkoutUrl) {
+        Linking.openURL(checkoutUrl).catch(err => console.log("Link open error", err));
+      } else {
+        Alert.alert("Payment started", "Proceeding to payment status...");
+      }
+
+      router.push({ pathname: "/payments/status", params: { id: paymentId } });
+    } catch (e) {
+      console.log("startPayment error", e);
+      const msg = e.response?.data?.detail || e.response?.data?.error || e.message || "Could not start payment. Check backend/tunnel.";
+      Alert.alert("Payment error", String(msg));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Start Payment</Text>
-      <TextInput placeholder="Amount in cents (e.g. 199)" style={styles.input} keyboardType="numeric" value={amount} onChangeText={setAmount} />
-      <TextInput placeholder="Currency" style={styles.input} value={currency} onChangeText={setCurrency} />
-      <TextInput placeholder="Article title (optional)" style={styles.input} value={title} onChangeText={setTitle} />
-      <TouchableOpacity style={styles.btn} onPress={start} disabled={loading}>
-        <Text style={styles.btntxt}>Create Checkout Session</Text>
-      </TouchableOpacity>
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 24, marginBottom: 12 }}>Start Payment</Text>
+
+      <Text style={{ marginBottom: 6 }}>Amount (units)</Text>
+      <TextInput placeholder="e.g. 1.99" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 12 }} />
+
+      <Text style={{ marginBottom: 6 }}>Description (optional)</Text>
+      <TextInput placeholder="Payment for article submission" value={description} onChangeText={setDescription} style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 18 }} />
+
+      {loading ? <ActivityIndicator /> : (
+        <>
+          <TouchableOpacity onPress={onStart} style={{ backgroundColor: "#1E90FF", padding: 14, borderRadius: 8 }}>
+            <Text style={{ color: "white", textAlign: "center", fontSize: 16 }}>Start Payment</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#1E90FF", textAlign: "center" }}>Back</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ddd", padding: 10, borderRadius: 8, marginBottom: 12 },
-  btn: { backgroundColor: "#D32F2F", padding: 12, borderRadius: 8 },
-  btntxt: { color: "#fff", textAlign: "center", fontWeight: "700" },
-});

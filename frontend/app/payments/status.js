@@ -1,48 +1,62 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import client from "../../src/api/client";
+// frontend/app/payments/status.js
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { getPayment } from "../../src/api/payments";
 
 export default function PaymentStatus() {
-  const [paymentId, setPaymentId] = useState("");
-  const [sessionId, setSessionId] = useState("");
-  const [result, setResult] = useState(null);
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef(null);
+  const POLL_INTERVAL = 2000;
 
-  const check = async () => {
+  async function fetchStatus() {
     try {
-      const payload = {};
-      if (paymentId) payload.payment_id = Number(paymentId);
-      if (sessionId) payload.session_id = sessionId;
-      const res = await client.post("/api/payments/verify/", payload);
-      setResult(res.data);
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Error", err.response?.data?.error || "Failed");
+      const res = await getPayment(id);
+      const data = res.data || {};
+      const s = data.status || data.payment_status || null;
+      setStatus(s);
+      if (s === "paid" || s === "completed" || s === "success") {
+        clearInterval(pollRef.current);
+        Alert.alert("Payment successful", "Thank you — payment completed.", [{ text: "OK", onPress: () => router.back() }]);
+      } else if (s === "failed" || s === "cancelled") {
+        clearInterval(pollRef.current);
+        Alert.alert("Payment failed", "Payment failed or was cancelled.");
+      }
+    } catch (e) {
+      console.log("getPayment error", e);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!id) {
+      Alert.alert("Missing payment id", "No payment id provided.");
+      return;
+    }
+    fetchStatus();
+    pollRef.current = setInterval(fetchStatus, POLL_INTERVAL);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [id]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verify Payment</Text>
-      <TextInput placeholder="Payment id" style={styles.input} value={paymentId} onChangeText={setPaymentId} keyboardType="numeric" />
-      <TextInput placeholder="Stripe session id (cs_...)" style={styles.input} value={sessionId} onChangeText={setSessionId} />
-      <TouchableOpacity style={styles.btn} onPress={check}>
-        <Text style={styles.btntxt}>Verify</Text>
-      </TouchableOpacity>
-
-      {result ? (
-        <View style={{ marginTop: 12 }}>
-          <Text>Result:</Text>
-          <Text>{JSON.stringify(result, null, 2)}</Text>
-        </View>
-      ) : null}
+    <View style={{ padding: 20, alignItems: "center" }}>
+      <Text style={{ fontSize: 20, marginBottom: 12 }}>Payment Status</Text>
+      {loading ? <ActivityIndicator size="large" /> : (
+        <>
+          <Text style={{ marginBottom: 8 }}>Payment ID: {id}</Text>
+          <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 8 }}>Status: {status || "unknown"}</Text>
+          <TouchableOpacity onPress={() => { setLoading(true); fetchStatus(); }} style={{ backgroundColor: "#1E90FF", padding: 10, borderRadius: 8, marginTop: 8 }}>
+            <Text style={{ color: "white" }}>Refresh</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#1E90FF" }}>Back</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ddd", padding: 10, borderRadius: 8, marginBottom: 12 },
-  btn: { backgroundColor: "#D84315", padding: 12, borderRadius: 8 },
-  btntxt: { color: "#fff", textAlign: "center", fontWeight: "700" },
-});

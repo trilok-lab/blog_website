@@ -4,7 +4,6 @@ from django.contrib.auth.password_validation import validate_password
 from .models import CustomUser, PhoneVerification
 from django.contrib.auth import authenticate
 
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
@@ -22,21 +21,23 @@ class RegisterSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["password"] != attrs["password2"]:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
-        # password validators
+        # validate password using Django validators
         validate_password(attrs["password"])
-        # ensure session exists & is verified
+
         session_id = attrs.get("verification_session_id")
         try:
             pv = PhoneVerification.objects.get(session_id=session_id, mobile_no=attrs["mobile_no"])
         except PhoneVerification.DoesNotExist:
             raise serializers.ValidationError({"verification_session_id": "Invalid verification session."})
+
         if not pv.verified or pv.is_expired():
             raise serializers.ValidationError({"verification_session_id": "Phone not verified or session expired."})
+
         return attrs
 
     def create(self, validated_data):
         validated_data.pop("password2", None)
-        session_id = validated_data.pop("verification_session_id", None)
+        validated_data.pop("verification_session_id", None)
         password = validated_data.pop("password")
         user = CustomUser.objects.create(
             username=validated_data["username"],
@@ -47,7 +48,6 @@ class RegisterSerializer(serializers.Serializer):
         )
         user.set_password(password)
         user.save()
-        # Optionally link the verification record -> mark verified_at already set
         return user
 
 
@@ -63,7 +63,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Provide username/email and password.")
         user = authenticate(username=username, password=password)
         if not user:
-            # attempt authenticate by email if username failed
+            # fallback: try lookup by email
             from django.contrib.auth import get_user_model
             User = get_user_model()
             try:

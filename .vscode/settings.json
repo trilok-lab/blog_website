@@ -1,3 +1,8 @@
-{
-    "CodeGPT.apiKey": "Anthropic"
+﻿{
+  "typescript.tsdk": null,
+  "typescript.validate.enable": false,
+  "javascript.validate.enable": false,
+  "files.exclude": {
+    "**/node_modules": true
+  }
 }

@@ -1,41 +1,38 @@
-import { createContext, useState, useEffect } from "react";
+﻿// frontend/src/context/ThemeContext.js
+import React, { createContext, useEffect, useState } from "react";
 import client from "../api/client";
 
 export const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
+export function ThemeProvider({ children }) {
   const [activeTheme, setActiveTheme] = useState("default");
   const [themeData, setThemeData] = useState({});
 
-  const loadTheme = async () => {
-    try {
-      const res = await client.get("/api/theming/setting/");
-      setActiveTheme(res.data.active_theme);
-      setThemeData(res.data.theme_data);
-    } catch (err) {
-      console.log("Theme load error:", err);
-    }
-  };
-
-  const changeTheme = async (theme) => {
-    try {
-      const res = await client.post("/api/theming/setting/change/", {
-        active_theme: theme,
-      });
-      setActiveTheme(res.data.active_theme);
-      setThemeData(res.data.theme_data);
-    } catch (err) {
-      console.log("Theme switch error:", err);
-    }
-  };
-
   useEffect(() => {
-    loadTheme();
+    (async () => {
+      try {
+        const res = await client.get("/api/theming/setting/");
+        if (res.data) {
+          setActiveTheme(res.data.active_theme || "default");
+          setThemeData(res.data.theme_data || {});
+        }
+      } catch {}
+    })();
   }, []);
+
+  const changeTheme = async (name) => {
+    try {
+      const res = await client.post("/api/theming/setting/change/", { active_theme: name });
+      if (res.data) {
+        setActiveTheme(res.data.active_theme);
+        setThemeData(res.data.theme_data || {});
+      }
+    } catch {}
+  };
 
   return (
     <ThemeContext.Provider value={{ activeTheme, themeData, changeTheme }}>
       {children}
     </ThemeContext.Provider>
   );
-};
+}

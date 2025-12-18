@@ -9,8 +9,10 @@ class CustomUserAdmin(UserAdmin):
         ("Additional Info", {"fields": ("mobile_no", "is_admin", "is_mobile_verified")}),
     )
     list_display = ("username", "email", "mobile_no", "is_staff", "is_admin", "is_mobile_verified")
+    search_fields = ("username", "email", "mobile_no")
+
 
 @admin.register(PhoneVerification)
 class PhoneVerificationAdmin(admin.ModelAdmin):
     list_display = ("mobile_no", "session_id", "verified", "created_at", "expires_at", "attempts", "resend_count")
-    readonly_fields = ("session_id",)
+    readonly_fields = ("session_id", "created_at", "expires_at")

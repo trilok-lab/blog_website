@@ -1,62 +1,70 @@
-import React, { useState, useContext } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+﻿// frontend/app/comments/add.js
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import client from "../../src/api/client";
-import { AuthContext } from "../../src/context/AuthContext";
-import { useSearchParams } from "expo-router";
+import { useAuthStore } from "../../src/store/authStore";
+import { showSnackbar } from "../../src/components/Snackbar";
 
 export default function AddComment() {
-  const { articleId } = useSearchParams();
-  const { user } = useContext(AuthContext);
+  const { id } = useLocalSearchParams(); // article id
+  const router = useRouter();
+  const auth = useAuthStore();
+
   const [guestName, setGuestName] = useState("");
   const [guestMobile, setGuestMobile] = useState("");
+  const [sessionId, setSessionId] = useState(""); // OTP session id
   const [content, setContent] = useState("");
-  const [sessionId, setSessionId] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
+    if (!content.trim()) {
+      Alert.alert("Error", "Please enter a comment.");
+      return;
+    }
+
+    if (!auth?.user) {
+      if (!guestName || !guestMobile || !sessionId) {
+        Alert.alert("Error", "Guest must fill all fields including OTP session.");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const payload = { article: articleId, content };
-      if (!user) {
-        // guest requires verification_session_id
-        payload.verification_session_id = sessionId;
+      const payload = { article: id, content };
+      if (!auth?.user) {
         payload.guest_name = guestName;
         payload.guest_mobile = guestMobile;
+        payload.verification_session_id = sessionId;
       }
-      await client.post("/api/comments/", payload);
-      Alert.alert("OK", "Comment submitted (may require approval)");
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Error", err.response?.data || "Failed");
+      await client.post("/comments/", payload);
+      showSnackbar("Comment submitted (may require admin approval)", "success");
+      setTimeout(() => router.back(), 500);
+    } catch (e) {
+      console.log(e);
+      Alert.alert("Error", e.response?.data?.detail || "Failed to submit comment");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add Comment</Text>
-
-      {!user && (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 40 , paddingHorizontal: 10, paddingTop: 50}}> Add Comment</Text>
+      {!auth?.user && (
         <>
-          <TextInput placeholder="Guest name" style={styles.input} value={guestName} onChangeText={setGuestName} />
-          <TextInput placeholder="Guest mobile" style={styles.input} value={guestMobile} onChangeText={setGuestMobile} />
-          <TextInput placeholder="verification_session_id" style={styles.input} value={sessionId} onChangeText={setSessionId} />
+          <TextInput placeholder="Your Name" value={guestName} onChangeText={setGuestName} style={{ borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 10 }} />
+          <TextInput placeholder="Mobile Number" keyboardType="number-pad" value={guestMobile} onChangeText={setGuestMobile} style={{ borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 10 }} />
+          <TextInput placeholder="OTP Verification Session ID" value={sessionId} onChangeText={setSessionId} style={{ borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 10 }} />
         </>
       )}
 
-      <TextInput placeholder="Comment" multiline style={[styles.input, { height: 120 }]} value={content} onChangeText={setContent} />
-      <TouchableOpacity style={styles.btn} onPress={submit} disabled={loading}>
-        <Text style={styles.btntxt}>Submit Comment</Text>
+      <TextInput placeholder="Write your comment..." value={content} onChangeText={setContent} multiline style={{ borderWidth: 1, padding: 12, borderRadius: 10, height: 120, textAlignVertical: "top" }} />
+
+      <TouchableOpacity onPress={submit} disabled={loading} style={{ backgroundColor: "#1E90FF", padding: 14, borderRadius: 8, marginTop: 16 }}>
+        {loading ? <ActivityIndicator color="white" /> : <Text style={{ textAlign: "center", color: "white", fontSize: 16 }}>Submit</Text>}
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, flex: 1, backgroundColor: "#fff" },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ddd", padding: 10, borderRadius: 8, marginBottom: 12 },
-  btn: { backgroundColor: "#1E88E5", padding: 12, borderRadius: 8 },
-  btntxt: { color: "#fff", textAlign: "center", fontWeight: "700" },
-});

@@ -1,45 +1,42 @@
-import { createContext, useState, useEffect } from "react";
+﻿// frontend/src/context/AuthContext.js
+import React, { createContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = async (username, password) => {
-    const res = await client.post("/auth/jwt/create/", { username, password });
-    await AsyncStorage.setItem("access_token", res.data.access);
-    await AsyncStorage.setItem("refresh_token", res.data.refresh);
+  useEffect(() => {
+    async function load() {
+      const saved = await AsyncStorage.getItem("user");
+      if (saved) setUser(JSON.parse(saved));
+      setLoading(false);
+    }
+    load();
+  }, []);
 
-    const profile = await client.get("/auth/profile/");
-    setUser(profile.data);
+  const loginUser = async (userData, access, refresh) => {
+    await AsyncStorage.setItem("access_token", access);
+    if (refresh) await AsyncStorage.setItem("refresh_token", refresh);
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
+    client.defaults.headers.Authorization = `Bearer ${access}`;
+    setUser(userData);
   };
 
-  const logout = async () => {
+  const logoutUser = async () => {
     await AsyncStorage.removeItem("access_token");
     await AsyncStorage.removeItem("refresh_token");
+    await AsyncStorage.removeItem("user");
+    delete client.defaults.headers.Authorization;
     setUser(null);
   };
 
-  const checkAuth = async () => {
-    const token = await AsyncStorage.getItem("access_token");
-    if (!token) return;
-    try {
-      const profile = await client.get("/auth/profile/");
-      setUser(profile.data);
-    } catch {
-      setUser(null);
-    }
-  };
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, logoutUser }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
