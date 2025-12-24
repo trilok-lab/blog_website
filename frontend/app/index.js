@@ -1,6 +1,5 @@
-﻿// frontend/app/index.js
-import { Redirect } from "expo-router";
+﻿import { Redirect } from "expo-router";
 
 export default function Index() {
-  return <Redirect href="/auth" />;
+  return <Redirect href="/auth/welcome" />;
 }

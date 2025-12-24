@@ -1,6 +1,4 @@
-﻿// frontend/app/menu/index.js
-
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   Text,
@@ -32,9 +30,9 @@ export default function Menu() {
   }, []);
 
   /* -------------------------------------------
-     LOGOUT HANDLER
+     LOGOUT HANDLER (FIXED)
   -------------------------------------------- */
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       "Logout",
       "Are you sure you want to logout?",
@@ -46,7 +44,9 @@ export default function Menu() {
           onPress: async () => {
             await logoutUser();
             setIsLoggedIn(false);
-            router.replace("/auth");
+
+            // ✅ IMPORTANT FIX
+            router.replace("/auth/welcome");
           },
         },
       ],
@@ -95,10 +95,16 @@ export default function Menu() {
       <MenuButton label="🔥 Popular Articles" route="/article?popular=true" />
 
       {/* SUBMISSION */}
-      <MenuButton label="➕ Submit Article (Guest)" route="/article/submit-guest" />
+      <MenuButton
+        label="➕ Submit Article (Guest)"
+        route="/article/submit-guest"
+      />
 
       {isLoggedIn && (
-        <MenuButton label="👤 Submit Article (User)" route="/article/submit-user" />
+        <MenuButton
+          label="👤 Submit Article (User)"
+          route="/article/submit-user"
+        />
       )}
 
       {/* MISC */}
@@ -107,12 +113,13 @@ export default function Menu() {
 
       {/* AUTH */}
       {!isLoggedIn && (
-        <MenuButton label="🔐 Login / Register" route="/auth" />
+        <MenuButton label="🔐 Login / Register" route="/auth/welcome" />
       )}
 
       {isLoggedIn && (
         <>
           <MenuButton label="🧑‍💼 Admin Panel" route="/admin" />
+
           <TouchableOpacity
             onPress={handleLogout}
             style={{

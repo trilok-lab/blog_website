@@ -1,73 +1,69 @@
-// frontend/app/auth/register.js
-import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-
-import { registerUser } from "../../src/api/auth";
+import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { useState } from "react";
+import { useRouter } from "expo-router";
+import { requestPhoneCode, verifyPhoneCode, registerUser } from "../../src/api/auth";
 
 export default function Register() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
+  const r = useRouter();
+  const [step, setStep] = useState(1);
+  const [mobile, setMobile] = useState("");
+  const [otp, setOtp] = useState("");
+  const [sid, setSid] = useState("");
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
 
-  const mobile_no = params.mobile_no;
-  const verification_session_id = params.verification_session_id;
+  const sendOtp = async () => {
+    const res = await requestPhoneCode(mobile);
+    setSid(res.session_id);
+    setStep(2);
+  };
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const verifyOtp = async () => {
+    await verifyPhoneCode(sid, otp);
+    setStep(3);
+  };
 
-  async function onRegister() {
-    if (!username || !password) {
-      return Alert.alert("Error", "All fields required");
-    }
-
-    try {
-      await registerUser({
-        username,
-        password,
-        mobile_no,
-        verification_session_id,
-      });
-
-      Alert.alert("Success", "Account created", [
-        { text: "OK", onPress: () => router.replace("/auth/login") },
-      ]);
-    } catch (e) {
-      console.log(e);
-      Alert.alert("Error", "Registration failed");
-    }
-  }
+  const register = async () => {
+    await registerUser({
+      username: u,
+      password: p,
+      mobile_no: mobile,
+      verification_session_id: sid,
+    });
+    Alert.alert("Success", "Account created", [
+      { text: "OK", onPress: () => r.replace("/auth/welcome") },
+    ]);
+  };
 
   return (
-    <View style={{ padding: 20, paddingTop: 50 }}>
-      <Text style={{ fontSize: 28, marginBottom: 20 }}>Register</Text>
+    <View style={{ padding: 24 }}>
+      {step === 1 && (
+        <>
+          <Text>Mobile Number</Text>
+          <TextInput value={mobile} onChangeText={setMobile}
+            style={{ borderWidth: 1, padding: 10 }} />
+          <TouchableOpacity onPress={sendOtp}><Text>Send OTP</Text></TouchableOpacity>
+        </>
+      )}
 
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      />
+      {step === 2 && (
+        <>
+          <Text>OTP</Text>
+          <TextInput value={otp} onChangeText={setOtp}
+            style={{ borderWidth: 1, padding: 10 }} />
+          <TouchableOpacity onPress={verifyOtp}><Text>Verify OTP</Text></TouchableOpacity>
+        </>
+      )}
 
-      <TextInput
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      />
-
-      <Pressable
-        onPress={onRegister}
-        style={{
-          backgroundColor: "#1E90FF",
-          padding: 14,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{ color: "#fff", textAlign: "center", fontSize: 16 }}>
-          Create Account
-        </Text>
-      </Pressable>
+      {step === 3 && (
+        <>
+          <TextInput placeholder="Username" value={u} onChangeText={setU}
+            style={{ borderWidth: 1, padding: 10 }} />
+          <TextInput placeholder="Password" secureTextEntry value={p} onChangeText={setP}
+            style={{ borderWidth: 1, padding: 10 }} />
+          <TouchableOpacity onPress={register}><Text>Create Account</Text></TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
