@@ -35,8 +35,8 @@ export default function Menu() {
       {/* BROWSE */}
       <Section title="📖 Read Articles">
         <MenuButton title="📄 View Articles" onPress={() => router.push("/article")} />
-        <MenuButton title="🖼 Slider Articles" onPress={() => router.push("/article?is_slider=true")} />
-        <MenuButton title="🔥 Popular Articles" onPress={() => router.push("/article?popular=true")} />
+        <MenuButton title="🖼 Slider Articles" onPress={() => router.push("/article/slider")} />
+        <MenuButton title="🔥 Popular Articles" onPress={() => router.push("/article/popular")} />
       </Section>
 
       {/* CONTRIBUTE */}

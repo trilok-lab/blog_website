@@ -1,10 +1,9 @@
-﻿// frontend/app/article/index.js
+// frontend/app/article/slider.js
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
@@ -13,65 +12,41 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import {
-  listArticles,
-  listSlider,
-} from "../../src/api/articles";
+import { listSlider } from "../../src/api/articles";
 
-export default function ArticleList({ mode = "view" }) {
+export default function SliderArticles() {
   const router = useRouter();
 
-  const pageTitle =
-    mode === "slider" ? "Featured Articles" : "Articles";
-
   const [articles, setArticles] = useState([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const debounceRef = useRef(null);
+  /* ---------------- FETCH SLIDER ARTICLES ---------------- */
 
-  /* -------- FETCH DATA -------- */
-
-  const loadArticles = async (q = "") => {
+  const loadSliderArticles = async () => {
     setLoading(true);
     try {
-      let res;
-      if (mode === "slider") {
-        res = await listSlider();
-        setArticles(res.data || []);
-      } else {
-        res = await listArticles(1, null, q ? { search: q } : {});
-        setArticles(res.data?.results || []);
-      }
-    } catch (e) {
-      console.log("Article fetch error", e);
+      const res = await listSlider();
+
+      // 🔥 IMPORTANT FIX: slider API is paginated
+      setArticles(res.data?.results || []);
+    } catch (error) {
+      console.log("Slider article fetch error", error);
     } finally {
       setLoading(false);
     }
   };
 
-  /* Initial load */
   useEffect(() => {
-    loadArticles();
-  }, [mode]);
+    loadSliderArticles();
+  }, []);
 
-  /* Search only for VIEW mode */
-  useEffect(() => {
-    if (mode !== "view") return;
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      loadArticles(search);
-    }, 400);
-  }, [search]);
-
-  /* -------- CARD -------- */
+  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
       item.excerpt && item.excerpt.trim().length > 0
         ? item.excerpt
-        : item.body?.slice(0, 120) + "...";
+        : item.body?.slice(0, 140) + "...";
 
     return (
       <TouchableOpacity
@@ -79,13 +54,15 @@ export default function ArticleList({ mode = "view" }) {
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
+        {/* IMAGE (OPTIONAL) */}
         {item.image && (
-          <Image source={{ uri: item.image }} style={styles.thumbnail} />
+          <Image source={{ uri: item.image }} style={styles.image} />
         )}
 
         <View style={styles.cardContent}>
           <Text style={styles.title}>{item.title}</Text>
 
+          {/* CATEGORIES */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
@@ -102,6 +79,8 @@ export default function ArticleList({ mode = "view" }) {
     );
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
     <View style={styles.container}>
       {/* APP NAME */}
@@ -110,17 +89,7 @@ export default function ArticleList({ mode = "view" }) {
       </Text>
 
       {/* PAGE TITLE */}
-      <Text style={styles.pageTitle}>{pageTitle}</Text>
-
-      {/* SEARCH */}
-      {mode === "view" && (
-        <TextInput
-          placeholder="Search articles..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.search}
-        />
-      )}
+      <Text style={styles.pageTitle}>Featured Articles</Text>
 
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
@@ -136,7 +105,7 @@ export default function ArticleList({ mode = "view" }) {
   );
 }
 
-/* -------- STYLES -------- */
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   container: {
@@ -144,24 +113,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#F8F9FA",
   },
+
   appName: {
     fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
   },
+
   pageTitle: {
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 16,
   },
-  search: {
-    borderWidth: 1,
-    borderColor: "#CED4DA",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-  },
+
   card: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -169,29 +133,35 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     overflow: "hidden",
   },
-  thumbnail: {
-    width: 90,
+
+  image: {
+    width: 120,
     height: "100%",
   },
+
   cardContent: {
     flex: 1,
     padding: 12,
   },
+
   title: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
   },
+
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
+
   category: {
     fontSize: 12,
     color: "#1E90FF",
     marginRight: 8,
   },
+
   excerpt: {
     fontSize: 14,
     color: "#495057",

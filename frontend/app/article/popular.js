@@ -1,10 +1,9 @@
-﻿// frontend/app/article/index.js
+// frontend/app/article/popular.js
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
@@ -13,59 +12,39 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import {
-  listArticles,
-  listSlider,
-} from "../../src/api/articles";
+import { listPopular } from "../../src/api/articles";
 
-export default function ArticleList({ mode = "view" }) {
+export default function PopularArticles() {
   const router = useRouter();
 
-  const pageTitle =
-    mode === "slider" ? "Featured Articles" : "Articles";
-
   const [articles, setArticles] = useState([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const debounceRef = useRef(null);
+  /* ---------------- FETCH POPULAR ARTICLES ---------------- */
 
-  /* -------- FETCH DATA -------- */
-
-  const loadArticles = async (q = "") => {
+  const loadPopularArticles = async () => {
     setLoading(true);
     try {
-      let res;
-      if (mode === "slider") {
-        res = await listSlider();
-        setArticles(res.data || []);
-      } else {
-        res = await listArticles(1, null, q ? { search: q } : {});
-        setArticles(res.data?.results || []);
-      }
-    } catch (e) {
-      console.log("Article fetch error", e);
+      const res = await listPopular();
+
+      // Popular API is paginated-safe (but may also return array)
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.results || [];
+
+      setArticles(data);
+    } catch (error) {
+      console.log("Popular article fetch error", error);
     } finally {
       setLoading(false);
     }
   };
 
-  /* Initial load */
   useEffect(() => {
-    loadArticles();
-  }, [mode]);
+    loadPopularArticles();
+  }, []);
 
-  /* Search only for VIEW mode */
-  useEffect(() => {
-    if (mode !== "view") return;
-
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      loadArticles(search);
-    }, 400);
-  }, [search]);
-
-  /* -------- CARD -------- */
+  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
@@ -79,13 +58,18 @@ export default function ArticleList({ mode = "view" }) {
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
+        {/* IMAGE (OPTIONAL) */}
         {item.image && (
-          <Image source={{ uri: item.image }} style={styles.thumbnail} />
+          <Image source={{ uri: item.image }} style={styles.image} />
         )}
 
         <View style={styles.cardContent}>
           <Text style={styles.title}>{item.title}</Text>
 
+          {/* VIEWS */}
+          <Text style={styles.views}>🔥 {item.popularity} views</Text>
+
+          {/* CATEGORIES */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
@@ -102,6 +86,8 @@ export default function ArticleList({ mode = "view" }) {
     );
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
     <View style={styles.container}>
       {/* APP NAME */}
@@ -110,17 +96,7 @@ export default function ArticleList({ mode = "view" }) {
       </Text>
 
       {/* PAGE TITLE */}
-      <Text style={styles.pageTitle}>{pageTitle}</Text>
-
-      {/* SEARCH */}
-      {mode === "view" && (
-        <TextInput
-          placeholder="Search articles..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.search}
-        />
-      )}
+      <Text style={styles.pageTitle}>Popular Articles</Text>
 
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
@@ -136,7 +112,7 @@ export default function ArticleList({ mode = "view" }) {
   );
 }
 
-/* -------- STYLES -------- */
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   container: {
@@ -144,24 +120,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#F8F9FA",
   },
+
   appName: {
     fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
   },
+
   pageTitle: {
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 16,
   },
-  search: {
-    borderWidth: 1,
-    borderColor: "#CED4DA",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-  },
+
   card: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -169,29 +140,42 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     overflow: "hidden",
   },
-  thumbnail: {
+
+  image: {
     width: 90,
     height: "100%",
   },
+
   cardContent: {
     flex: 1,
     padding: 12,
   },
+
   title: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 4,
+    marginBottom: 2,
   },
+
+  views: {
+    fontSize: 12,
+    color: "#DC3545",
+    marginBottom: 4,
+    fontWeight: "600",
+  },
+
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
+
   category: {
     fontSize: 12,
     color: "#1E90FF",
     marginRight: 8,
   },
+
   excerpt: {
     fontSize: 14,
     color: "#495057",

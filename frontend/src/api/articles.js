@@ -1,8 +1,11 @@
 ﻿// frontend/src/api/articles.js
-import client from "./client";
+import { publicClient } from "./client";
 
+/**
+ * View Articles (public)
+ */
 export const listArticles = (page = 1, pageSize = null, filters = {}) =>
-  client.get("/articles/", {
+  publicClient.get("/api/articles/", {
     params: {
       page,
       page_size: pageSize,
@@ -10,14 +13,26 @@ export const listArticles = (page = 1, pageSize = null, filters = {}) =>
     },
   });
 
+/**
+ * Single article (increments views)
+ */
 export const getArticle = (id) =>
-  client.get(`/articles/${id}/`);
+  publicClient.get(`/api/articles/${id}/`);
 
+/**
+ * Slider articles
+ */
 export const listSlider = () =>
-  client.get("/articles/slider/");
+  publicClient.get("/api/articles/slider/");
 
+/**
+ * Popular articles (by views)
+ */
 export const listPopular = () =>
-  client.get("/articles/popular/");
+  publicClient.get("/api/articles/popular/");
 
+/**
+ * Categories
+ */
 export const getCategories = () =>
-  client.get("/articles/categories/");
+  publicClient.get("/api/articles/categories/");

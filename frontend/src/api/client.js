@@ -1,35 +1,40 @@
-﻿import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+﻿// frontend/src/api/client.js
+import axios from "axios";
 import Constants from "expo-constants";
-import { showSnackbar } from "../components/Snackbar";
+import { getAccessToken } from "../utils/token";
 
-const API_URL =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL ||
-  Constants.manifest2?.extra?.EXPO_PUBLIC_API_URL || 
-  "http://10.0.2.2:8000/api";
+const API_BASE_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
 
-console.log("API URL in use:", API_URL);
+/**
+ * PUBLIC CLIENT
+ * - NO Authorization header
+ * - Used for articles, slider, popular, categories
+ */
+export const publicClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+});
 
-const client = axios.create({
-  baseURL: API_URL,
-  timeout: 20000,
-  headers: {
-    "Content-Type": "application/json",
+/**
+ * AUTHENTICATED CLIENT
+ * - Automatically attaches JWT token
+ * - Used for protected APIs
+ */
+const authClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+});
+
+authClient.interceptors.request.use(
+  async (config) => {
+    const token = await getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   },
-});
-
-client.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-client.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    console.log("API error:", err.message);
-    return Promise.reject(err);
-  }
+  (error) => Promise.reject(error)
 );
 
-export default client;
+export default authClient;
