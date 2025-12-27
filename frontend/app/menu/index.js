@@ -1,138 +1,118 @@
-﻿import React, { useEffect, useState } from "react";
-import {
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
+﻿// frontend/app/menu/index.js
 
-import { getAccessToken, logoutUser } from "../../src/utils/token";
+import React from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function Menu() {
   const router = useRouter();
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  /* -------------------------------------------
-     CHECK AUTH STATE
-  -------------------------------------------- */
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = await getAccessToken();
-      setIsLoggedIn(!!token);
-      setCheckingAuth(false);
-    };
-
-    checkAuth();
-  }, []);
-
-  /* -------------------------------------------
-     LOGOUT HANDLER (FIXED)
-  -------------------------------------------- */
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            await logoutUser();
-            setIsLoggedIn(false);
-
-            // ✅ IMPORTANT FIX
-            router.replace("/auth/welcome");
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  /* -------------------------------------------
-     MENU BUTTON
-  -------------------------------------------- */
-  const MenuButton = ({ label, route, danger }) => (
+  const MenuButton = ({ title, onPress, color = "#1E90FF" }) => (
     <TouchableOpacity
-      onPress={() => router.push(route)}
-      style={{
-        backgroundColor: danger ? "#dc3545" : "#1E90FF",
-        padding: 14,
-        borderRadius: 10,
-        marginBottom: 12,
-      }}
+      onPress={onPress}
+      style={[styles.button, { backgroundColor: color }]}
+      activeOpacity={0.85}
     >
-      <Text style={{ color: "#fff", fontSize: 18 }}>{label}</Text>
+      <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   );
 
-  /* -------------------------------------------
-     LOADING
-  -------------------------------------------- */
-  if (checkingAuth) {
-    return (
-      <ScrollView contentContainerStyle={{ flex: 1, justifyContent: "center" }}>
-        <ActivityIndicator size="large" />
-      </ScrollView>
-    );
-  }
+  const Section = ({ title, children }) => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
 
-  /* -------------------------------------------
-     MENU UI
-  -------------------------------------------- */
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 50 }}>
-      <Text style={{ fontSize: 28, marginBottom: 20 }}>Menu</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={[styles.appName, { marginTop: 30 , marginBottom: 20, }]}>Trilok Blog App</Text>
+        <Text style={[styles.pageTitle, { marginTop: 20 , marginBottom: 10, }]}>Menu</Text>
+      </View>
 
-      {/* ARTICLES */}
-      <MenuButton label="📄 View Articles" route="/article" />
-      <MenuButton label="🖼 Slider Articles" route="/article?is_slider=true" />
-      <MenuButton label="🔥 Popular Articles" route="/article?popular=true" />
+      {/* BROWSE */}
+      <Section title="📖 Read Articles">
+        <MenuButton title="📄 View Articles" onPress={() => router.push("/article")} />
+        <MenuButton title="🖼 Slider Articles" onPress={() => router.push("/article?is_slider=true")} />
+        <MenuButton title="🔥 Popular Articles" onPress={() => router.push("/article?popular=true")} />
+      </Section>
 
-      {/* SUBMISSION */}
-      <MenuButton
-        label="➕ Submit Article (Guest)"
-        route="/article/submit-guest"
-      />
+      {/* CONTRIBUTE */}
+      <Section title="✍️ Contribute">
+        <MenuButton title="➕ Submit Article (Guest)" onPress={() => router.push("/article/submit-guest")} />
+        <MenuButton title="👤 Submit Article (User)" onPress={() => router.push("/article/submit-user")} />
+        <MenuButton title="💬 Add Comment" onPress={() => router.push("/comments/add")} />
+      </Section>
 
-      {isLoggedIn && (
-        <MenuButton
-          label="👤 Submit Article (User)"
-          route="/article/submit-user"
-        />
-      )}
+      {/* SUPPORT */}
+      <Section title="📞 Support">
+        <MenuButton title="☎ Contact Us" onPress={() => router.push("/contact")} />
+      </Section>
 
-      {/* MISC */}
-      <MenuButton label="💬 Add Comment" route="/comments/add" />
-      <MenuButton label="☎ Contact Us" route="/contact" />
+      {/* ADMIN */}
+      <Section title="🧑‍💼 Admin">
+        <MenuButton title="🧑‍💼 Admin Panel" onPress={() => router.push("/admin")} />
+      </Section>
 
-      {/* AUTH */}
-      {!isLoggedIn && (
-        <MenuButton label="🔐 Login / Register" route="/auth/welcome" />
-      )}
-
-      {isLoggedIn && (
-        <>
-          <MenuButton label="🧑‍💼 Admin Panel" route="/admin" />
-
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={{
-              backgroundColor: "#dc3545",
-              padding: 14,
-              borderRadius: 10,
-              marginBottom: 30,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 18 }}>🚪 Logout</Text>
-          </TouchableOpacity>
-        </>
-      )}
+      {/* LOGOUT */}
+      <View style={styles.logoutSection}>
+        <MenuButton title="🚪 Logout" color="#DC3545" onPress={() => router.replace("/auth/login")} />
+      </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    paddingBottom: 60,
+    backgroundColor: "#F8F9FA",
+  },
+
+  /* HEADER */
+  header: {
+    marginBottom: 30,
+  },
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 6,
+    marginLeft: 6, // slight right shift
+  },
+
+  /* SECTIONS */
+  section: {
+    marginBottom: 26,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
+    color: "#495057",
+  },
+
+  /* BUTTONS */
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  /* LOGOUT */
+  logoutSection: {
+    marginTop: 20,
+  },
+});
