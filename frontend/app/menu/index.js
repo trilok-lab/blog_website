@@ -43,7 +43,7 @@ export default function Menu() {
       <Section title="✍️ Contribute">
         <MenuButton title="➕ Submit Article (Guest)" onPress={() => router.push("/article/submit-guest")} />
         <MenuButton title="👤 Submit Article (User)" onPress={() => router.push("/article/submit-user")} />
-        <MenuButton title="💬 Add Comment" onPress={() => router.push("/comments/add")} />
+        {/*<MenuButton title="💬 Add Comment" onPress={() => router.push("/comments/add")} />*/}
       </Section>
 
       {/* SUPPORT */}

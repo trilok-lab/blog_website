@@ -1,4 +1,5 @@
 # comments/views.py
+
 from rest_framework import viewsets, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -18,75 +19,60 @@ class CommentViewSet(viewsets.ModelViewSet):
     - GET list (approved only)
     - POST create (guest or signed-in user)
     - GET retrieve
-    Update/delete => admin only (handled in admin_features)
+    Update/delete => admin only (handled elsewhere)
     """
 
-    queryset = Comment.objects.select_related("article", "user").all()
+    queryset = Comment.objects.select_related("article", "user")
     serializer_class = CommentSerializer
 
+    # ✅ PUBLIC READ, AUTH WRITE
     def get_permissions(self):
-        if self.action in ["list", "retrieve", "create"]:
+        if self.action in ["list", "retrieve"]:
             return [AllowAny()]
         return [IsAuthenticated()]
 
     # --------------------------------------
-    # LIST COMMENTS (public)
+    # LIST COMMENTS (PUBLIC)
     # --------------------------------------
     def list(self, request, *args, **kwargs):
         """
         GET /api/comments/?article=<id or slug>
         Returns approved comments only.
         """
-        article_id_or_slug = request.query_params.get("article")
+        article_param = request.query_params.get("article")
 
         qs = Comment.objects.filter(approved=True)
 
-        if article_id_or_slug:
-            # Try slug first, then pk
-            qs = qs.filter(article__slug=article_id_or_slug) | qs.filter(article_id=article_id_or_slug)
+        if article_param:
+            # ✅ SAFE: detect numeric ID vs slug
+            if str(article_param).isdigit():
+                qs = qs.filter(article_id=int(article_param))
+            else:
+                qs = qs.filter(article__slug=article_param)
 
-        serializer = self.get_serializer(qs.order_by("-created_at"), many=True)
+        qs = qs.order_by("-created_at")
+
+        serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
     # --------------------------------------
-    # CREATE COMMENT (guest or signed in)
+    # CREATE COMMENT (AUTH ONLY)
     # --------------------------------------
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None
 
-        if user:  
-            # Admin auto approves, normal users need approval
+        if user:
             is_auto_approved = getattr(user, "is_admin", False)
             serializer.save(user=user, approved=is_auto_approved)
             return
 
-        # Guest submission
-        session_id = self.request.data.get("verification_session_id")
-        if not session_id:
-            raise serializers.ValidationError({"detail": "Phone verification required for guest comments"})
-
-        try:
-            pv = PhoneVerification.objects.get(session_id=session_id)
-        except PhoneVerification.DoesNotExist:
-            raise serializers.ValidationError({"detail": "Invalid verification session"})
-
-        if not pv.verified or pv.is_expired():
-            raise serializers.ValidationError({"detail": "Phone not verified or expired"})
-
-        # Mobile must match guest_mobile (if provided)
-        guest_mobile = self.request.data.get("guest_mobile")
-        if guest_mobile and guest_mobile != pv.mobile_no:
-            raise serializers.ValidationError({"detail": "Guest mobile must match verified number"})
-
-        serializer.save(
-            user=None,
-            guest_name=self.request.data.get("guest_name"),
-            guest_mobile=pv.mobile_no,
-            approved=False   # guest comments require admin approval
+        # ❌ Guests cannot post comments anymore
+        raise serializers.ValidationError(
+            {"detail": "Login required to post a comment"}
         )
 
     # --------------------------------------
-    # OPTIONAL: helper endpoints for mobile client
+    # OPTIONAL: helper endpoint
     # --------------------------------------
     @action(detail=False, methods=["get"], url_path="by-article")
     def by_article(self, request):
@@ -96,6 +82,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         slug = request.query_params.get("slug")
         if not slug:
             return Response({"detail": "slug required"}, status=400)
-        comments = Comment.objects.filter(article__slug=slug, approved=True)
+
+        comments = Comment.objects.filter(
+            article__slug=slug,
+            approved=True
+        ).order_by("-created_at")
+
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
