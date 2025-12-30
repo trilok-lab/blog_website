@@ -1,82 +1,296 @@
 // frontend/app/article/submit-user.js
+
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  Image,
+  StyleSheet,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+
 import { submitArticle, getCategories } from "../../src/api/articles";
-import { showSnackbar } from "../../src/components/Snackbar";
 
 export default function SubmitArticleUser() {
   const router = useRouter();
 
+  /* ---------------- FORM STATE ---------------- */
+
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
+
   const [categories, setCategories] = useState([]);
   const [selectedCats, setSelectedCats] = useState([]);
+
   const [image, setImage] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  /* ---------------- LOAD CATEGORIES ---------------- */
 
   useEffect(() => {
-    getCategories().then(res => setCategories(res.data)).catch(() => {});
+    const loadCategories = async () => {
+      try {
+        const res = await getCategories();
+        // API returns paginated response
+        setCategories(res.data?.results || []);
+      } catch (err) {
+        console.log("Category load error", err);
+        Alert.alert("Error", "Failed to load categories.");
+      }
+    };
+
+    loadCategories();
   }, []);
 
+  /* ---------------- IMAGE PICKER ---------------- */
+
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, base64: false, quality: 0.7 });
-    if (!result.canceled) setImage(result.assets[0]);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0]);
+    }
   };
+
+  /* ---------------- CATEGORY TOGGLE ---------------- */
 
   const toggleCategory = (id) => {
-    if (selectedCats.includes(id)) setSelectedCats(selectedCats.filter(c => c !== id));
-    else setSelectedCats([...selectedCats, id]);
+    if (selectedCats.includes(id)) {
+      setSelectedCats(selectedCats.filter((c) => c !== id));
+    } else {
+      setSelectedCats([...selectedCats, id]);
+    }
   };
 
+  /* ---------------- SUBMIT ---------------- */
+
   const submit = async () => {
-    if (!title || !body) {
+    if (!title.trim() || !body.trim()) {
       Alert.alert("Missing fields", "Title and body are required.");
       return;
     }
 
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("excerpt", excerpt);
-    fd.append("body", body);
-    selectedCats.forEach(id => fd.append("category_ids", id));
-    if (image) fd.append("image", { uri: image.uri, name: "article.jpg", type: "image/jpeg" });
+    if (selectedCats.length === 0) {
+      Alert.alert("Select category", "Please select at least one category.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("excerpt", excerpt);
+    formData.append("body", body);
+
+    // ✅ DRF-safe category array
+    selectedCats.forEach((id) => {
+    formData.append("category_ids", id);
+    });
+
+
+    if (image) {
+      formData.append("image", {
+        uri: image.uri,
+        name: "article.jpg",
+        type: "image/jpeg",
+      });
+    }
 
     try {
-      await submitArticle(fd);
-      showSnackbar("Article submitted", "success");
+      setSubmitting(true);
+      await submitArticle(formData);
+
+      Alert.alert(
+        "Submitted",
+        "Your article has been submitted for review."
+      );
       router.replace("/article");
-    } catch (e) {
-      console.log("submit err", e);
-      showSnackbar("Submission failed", "error");
+    } catch (err) {
+      console.log("Submit error", err);
+      Alert.alert("Error", "Submission failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
-    <ScrollView style={{ padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 40 , paddingHorizontal: 10, paddingTop: 50}}>Submit Article (User)</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 60 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* APP NAME */}
+      <Text style={styles.appName}>Trilok Blog App</Text>
 
-      <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={{ borderWidth: 1, padding: 10, marginVertical: 10 }} />
-      <TextInput placeholder="Short Excerpt" value={excerpt} onChangeText={setExcerpt} style={{ borderWidth: 1, padding: 10, marginVertical: 10 }} />
-      <TextInput placeholder="Body" value={body} onChangeText={setBody} multiline style={{ borderWidth: 1, padding: 10, marginVertical: 10, height: 180 }} />
+      {/* PAGE TITLE */}
+      <Text style={styles.pageTitle}>Submit Article (User)</Text>
 
-      <TouchableOpacity onPress={pickImage} style={{ backgroundColor: "#1E90FF", padding: 10, borderRadius: 6 }}>
-        <Text style={{ color: "white", textAlign: "center" }}>Pick Feature Image</Text>
+      <TextInput
+        placeholder="Title"
+        value={title}
+        onChangeText={setTitle}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Short Excerpt"
+        value={excerpt}
+        onChangeText={setExcerpt}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Body"
+        value={body}
+        onChangeText={setBody}
+        multiline
+        style={[styles.input, styles.bodyInput]}
+      />
+
+      <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
+        <Text style={styles.imageBtnText}>
+          Pick Feature Image (Optional)
+        </Text>
       </TouchableOpacity>
 
-      {image && <Image source={{ uri: image.uri }} style={{ width: "100%", height: 200, marginVertical: 10 }} />}
+      {image && (
+        <Image source={{ uri: image.uri }} style={styles.previewImage} />
+      )}
 
-      <Text style={{ marginVertical: 10, fontSize: 18 }}>Categories</Text>
-      {categories.map(c => (
-        <TouchableOpacity key={c.id} onPress={() => toggleCategory(c.id)} style={{ padding: 10, marginBottom: 6, backgroundColor: selectedCats.includes(c.id) ? "#1E90FF" : "#eee", borderRadius: 6 }}>
-          <Text style={{ color: selectedCats.includes(c.id) ? "white" : "black" }}>{c.name}</Text>
+      {/* CATEGORIES */}
+      <Text style={styles.sectionTitle}>Categories</Text>
+
+      {categories.map((cat) => (
+        <TouchableOpacity
+          key={cat.id}
+          onPress={() => toggleCategory(cat.id)}
+          style={[
+            styles.categoryItem,
+            selectedCats.includes(cat.id) && styles.categorySelected,
+          ]}
+        >
+          <Text
+            style={[
+              styles.categoryText,
+              selectedCats.includes(cat.id) && { color: "#fff" },
+            ]}
+          >
+            {cat.name}
+          </Text>
         </TouchableOpacity>
       ))}
 
-      <TouchableOpacity onPress={submit} style={{ backgroundColor: "#28a745", padding: 14, marginVertical: 20, borderRadius: 6 }}>
-        <Text style={{ color: "white", textAlign: "center" }}>Submit</Text>
+      <TouchableOpacity
+        style={styles.submitBtn}
+        onPress={submit}
+        disabled={submitting}
+      >
+        <Text style={styles.submitText}>
+          {submitting ? "Submitting..." : "Submit"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+    paddingHorizontal: 16,
+  },
+
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+    marginTop: 40,
+  },
+
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginVertical: 30,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#CED4DA",
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+  },
+
+  bodyInput: {
+    height: 180,
+    textAlignVertical: "top",
+  },
+
+  imageBtn: {
+    backgroundColor: "#1E90FF",
+    padding: 12,
+    borderRadius: 6,
+    marginVertical: 10,
+  },
+
+  imageBtnText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
+  previewImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginVertical: 10,
+  },
+
+  categoryItem: {
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: "#E9ECEF",
+    marginBottom: 8,
+  },
+
+  categorySelected: {
+    backgroundColor: "#1E90FF",
+  },
+
+  categoryText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  submitBtn: {
+    backgroundColor: "#28A745",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 30,
+  },
+
+  submitText: {
+    color: "#fff",
+    fontWeight: "800",
+    textAlign: "center",
+    fontSize: 16,
+  },
+});

@@ -1,9 +1,8 @@
 ﻿// frontend/src/api/articles.js
-import { publicClient } from "./client";
+import client, { publicClient } from "./client";
 
-/**
- * View Articles (public)
- */
+/* ---------------- PUBLIC ---------------- */
+
 export const listArticles = (page = 1, pageSize = null, filters = {}) =>
   publicClient.get("/api/articles/", {
     params: {
@@ -13,26 +12,23 @@ export const listArticles = (page = 1, pageSize = null, filters = {}) =>
     },
   });
 
-/**
- * Single article (increments views)
- */
 export const getArticle = (id) =>
   publicClient.get(`/api/articles/${id}/`);
 
-/**
- * Slider articles
- */
 export const listSlider = () =>
   publicClient.get("/api/articles/slider/");
 
-/**
- * Popular articles (by views)
- */
 export const listPopular = () =>
   publicClient.get("/api/articles/popular/");
 
-/**
- * Categories
- */
 export const getCategories = () =>
-  publicClient.get("/api/articles/categories/");
+  client.get("/api/articles/categories/"); // 🔐 auth required
+
+/* ---------------- AUTH REQUIRED ---------------- */
+
+export const submitArticle = (formData) =>
+  client.post("/api/articles/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
