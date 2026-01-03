@@ -59,3 +59,6 @@ media/
 staticfiles/
 
 extra/
+
+# Ignore old exported code text files
+old code txt files/
