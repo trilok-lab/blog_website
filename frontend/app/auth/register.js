@@ -1,69 +1,193 @@
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
-import { useState } from "react";
-import { useRouter } from "expo-router";
-import { requestPhoneCode, verifyPhoneCode, registerUser } from "../../src/api/auth";
+// frontend/app/auth/register.js
+
+import React, { useEffect, useState } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+
+import { registerUser, loginUser } from "../../src/api/auth";
+import { saveTokens } from "../../src/utils/token";
 
 export default function Register() {
-  const r = useRouter();
-  const [step, setStep] = useState(1);
-  const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState("");
-  const [sid, setSid] = useState("");
-  const [u, setU] = useState("");
-  const [p, setP] = useState("");
+  const router = useRouter();
+  const { session_id, mobile_no } = useLocalSearchParams();
 
-  const sendOtp = async () => {
-    const res = await requestPhoneCode(mobile);
-    setSid(res.session_id);
-    setStep(2);
-  };
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const verifyOtp = async () => {
-    await verifyPhoneCode(sid, otp);
-    setStep(3);
-  };
+  /* ---------------- ROUTE GUARD (SAFE) ---------------- */
+  useEffect(() => {
+    if (!session_id || !mobile_no) {
+      router.replace("/auth/otp-request");
+    }
+  }, [session_id, mobile_no]);
 
+  const passwordStrength =
+    password.length < 6 ? "Weak" :
+    password.length < 10 ? "Medium" : "Strong";
+
+  /* ---------------- REGISTER ---------------- */
   const register = async () => {
-    await registerUser({
-      username: u,
-      password: p,
-      mobile_no: mobile,
-      verification_session_id: sid,
-    });
-    Alert.alert("Success", "Account created", [
-      { text: "OK", onPress: () => r.replace("/auth/welcome") },
-    ]);
+    if (!username.trim()) {
+      Alert.alert("Error", "Username is required");
+      return;
+    }
+
+    if (password !== password2) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await registerUser({
+        username,
+        email,
+        password,
+        password2,
+        mobile_no,
+        verification_session_id: session_id,
+      });
+
+      // Auto login
+      const res = await loginUser({ username, password });
+      await saveTokens(res);
+
+      router.replace("/menu");
+    } catch (err) {
+      Alert.alert(
+        "Registration failed",
+        err?.body?.detail || "Unable to create account"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ---------------- UI ---------------- */
   return (
-    <View style={{ padding: 24 }}>
-      {step === 1 && (
-        <>
-          <Text>Mobile Number</Text>
-          <TextInput value={mobile} onChangeText={setMobile}
-            style={{ borderWidth: 1, padding: 10 }} />
-          <TouchableOpacity onPress={sendOtp}><Text>Send OTP</Text></TouchableOpacity>
-        </>
-      )}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.appName}>Trilok Blog App</Text>
+        <Text style={styles.step}>Step 3 of 3</Text>
 
-      {step === 2 && (
-        <>
-          <Text>OTP</Text>
-          <TextInput value={otp} onChangeText={setOtp}
-            style={{ borderWidth: 1, padding: 10 }} />
-          <TouchableOpacity onPress={verifyOtp}><Text>Verify OTP</Text></TouchableOpacity>
-        </>
-      )}
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Mobile verified: {mobile_no}</Text>
 
-      {step === 3 && (
-        <>
-          <TextInput placeholder="Username" value={u} onChangeText={setU}
-            style={{ borderWidth: 1, padding: 10 }} />
-          <TextInput placeholder="Password" secureTextEntry value={p} onChangeText={setP}
-            style={{ borderWidth: 1, padding: 10 }} />
-          <TouchableOpacity onPress={register}><Text>Create Account</Text></TouchableOpacity>
-        </>
-      )}
-    </View>
+        <TextInput
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          placeholder="Email (optional)"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+        />
+
+        <Text style={styles.strength}>
+          Password strength: {passwordStrength}
+        </Text>
+
+        <TextInput
+          placeholder="Confirm Password"
+          secureTextEntry
+          value={password2}
+          onChangeText={setPassword2}
+          style={styles.input}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={register}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Creating..." : "Create Account"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 24,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+  },
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  step: {
+    textAlign: "center",
+    color: "#6C757D",
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6C757D",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+    marginBottom: 12,
+  },
+  strength: {
+    fontSize: 13,
+    color: "#6C757D",
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: "#28A745",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+});

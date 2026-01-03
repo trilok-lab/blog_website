@@ -91,7 +91,7 @@ export default function SubmitArticleUser() {
 
     // ✅ DRF-safe category array
     selectedCats.forEach((id) => {
-    formData.append("category_ids", id);
+  formData.append("category_ids", id);
     });
 
 
