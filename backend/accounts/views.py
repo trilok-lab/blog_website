@@ -1,26 +1,25 @@
-# accounts/views.py
+# backend/accounts/views.py
 
 import random
 import requests
 
 from django.conf import settings
 from django.core.cache import cache
-from django.utils import timezone
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import permissions
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from twilio.rest import Client as TwilioClient
-
 from .models import PhoneVerification, CustomUser
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .whatsapp import send_whatsapp_otp
 
 
 # =====================================================
-# OTP / TWILIO CONFIG
+# OTP CONFIG
 # =====================================================
 
 OTP_REQUEST_LIMIT_KEY = "otp_req_count_{phone}"
@@ -28,15 +27,8 @@ OTP_REQUEST_LIMIT_WINDOW = 3600  # 1 hour
 OTP_MAX_PER_WINDOW = 5
 
 
-def _twilio_client():
-    return TwilioClient(
-        settings.TWILIO_ACCOUNT_SID,
-        settings.TWILIO_AUTH_TOKEN
-    )
-
-
-def _generate_otp():
-    return f"{random.randint(100000, 999999)}"
+def generate_otp():
+    return str(random.randint(100000, 999999))
 
 
 # =====================================================
@@ -48,34 +40,37 @@ class RequestPhoneCodeView(APIView):
 
     def post(self, request):
         mobile_no = request.data.get("mobile_no", "").strip()
+
         if not mobile_no:
             return Response({"detail": "mobile_no required"}, status=400)
 
         key = OTP_REQUEST_LIMIT_KEY.format(phone=mobile_no)
         count = cache.get(key, 0)
-        if count >= OTP_MAX_PER_WINDOW:
-            return Response({"detail": "OTP request limit exceeded"}, status=429)
 
-        otp = _generate_otp()
+        if count >= OTP_MAX_PER_WINDOW:
+            return Response(
+                {"detail": "OTP request limit exceeded"},
+                status=429
+            )
+
+        otp = generate_otp()
         pv = PhoneVerification.create_for_mobile(mobile_no, otp)
 
         if settings.DEBUG:
+            cache.set(key, count + 1, OTP_REQUEST_LIMIT_WINDOW)
             return Response({
                 "session_id": str(pv.session_id),
                 "debug_otp": otp
             })
 
-        try:
-            client = _twilio_client()
-            client.messages.create(
-                body=f"Your verification code is {otp}",
-                from_=settings.TWILIO_FROM_NUMBER,
-                to=mobile_no
-            )
-            cache.set(key, count + 1, OTP_REQUEST_LIMIT_WINDOW)
-            return Response({"session_id": str(pv.session_id)})
-        except Exception as e:
-            return Response({"detail": str(e)}, status=500)
+        send_whatsapp_otp(
+            phone_number=mobile_no,
+            otp=otp
+        )
+
+        cache.set(key, count + 1, OTP_REQUEST_LIMIT_WINDOW)
+
+        return Response({"session_id": str(pv.session_id)})
 
 
 class ResendPhoneCodeView(APIView):
@@ -86,7 +81,10 @@ class ResendPhoneCodeView(APIView):
         session_id = request.data.get("session_id")
 
         if not mobile_no or not session_id:
-            return Response({"detail": "mobile_no and session_id required"}, status=400)
+            return Response(
+                {"detail": "mobile_no and session_id required"},
+                status=400
+            )
 
         try:
             pv = PhoneVerification.objects.get(
@@ -99,7 +97,7 @@ class ResendPhoneCodeView(APIView):
         if pv.resend_count >= PhoneVerification.MAX_RESENDS:
             return Response({"detail": "Resend limit reached"}, status=429)
 
-        otp = _generate_otp()
+        otp = generate_otp()
         pv.code = otp
         pv.increment_resend()
 
@@ -109,16 +107,12 @@ class ResendPhoneCodeView(APIView):
                 "debug_otp": otp
             })
 
-        try:
-            client = _twilio_client()
-            client.messages.create(
-                body=f"Your verification code is {otp}",
-                from_=settings.TWILIO_FROM_NUMBER,
-                to=mobile_no
-            )
-            return Response({"session_id": str(pv.session_id)})
-        except Exception as e:
-            return Response({"detail": str(e)}, status=500)
+        send_whatsapp_otp(
+            phone_number=mobile_no,
+            otp=otp
+        )
+
+        return Response({"session_id": str(pv.session_id)})
 
 
 class VerifyPhoneCodeView(APIView):
@@ -129,7 +123,10 @@ class VerifyPhoneCodeView(APIView):
         code = request.data.get("code")
 
         if not session_id or not code:
-            return Response({"detail": "session_id and code required"}, status=400)
+            return Response(
+                {"detail": "session_id and code required"},
+                status=400
+            )
 
         try:
             pv = PhoneVerification.objects.get(session_id=session_id)
@@ -143,6 +140,7 @@ class VerifyPhoneCodeView(APIView):
             return Response({"detail": "Code expired"}, status=400)
 
         pv.increment_attempts()
+
         if pv.attempts > PhoneVerification.MAX_ATTEMPTS:
             return Response({"detail": "Too many attempts"}, status=429)
 
@@ -154,7 +152,7 @@ class VerifyPhoneCodeView(APIView):
 
 
 # =====================================================
-# NORMAL AUTH
+# AUTH
 # =====================================================
 
 class RegisterView(APIView):
@@ -187,7 +185,7 @@ class LoginView(APIView):
 
 
 # =====================================================
-# SOCIAL LOGIN (GOOGLE + FACEBOOK) — TOKEN BASED
+# SOCIAL LOGIN
 # =====================================================
 
 class SocialLoginView(APIView):

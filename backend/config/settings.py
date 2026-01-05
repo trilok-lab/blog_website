@@ -54,11 +54,18 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
 PAYMENT_AMOUNT_CENTS = env.int("PAYMENT_AMOUNT_CENTS", default=199)
 
 # --------------------------------------------------
-# TWILIO
+# TWILIO (LEGACY – STILL PRESENT)
 # --------------------------------------------------
-TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
-TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER")
+TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
+TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER", default="")
+
+# --------------------------------------------------
+# WHATSAPP CLOUD API (REQUIRED)
+# --------------------------------------------------
+WHATSAPP_API_VERSION = env("WHATSAPP_API_VERSION", default="v22.0")
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID")
+WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN")
 
 # --------------------------------------------------
 # SOCIAL LOGIN (TOKEN BASED – MOBILE)
@@ -69,7 +76,6 @@ GOOGLE_WEB_CLIENT_ID = env("GOOGLE_WEB_CLIENT_ID")
 # INSTALLED APPS
 # --------------------------------------------------
 INSTALLED_APPS = [
-    # Django core
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -77,13 +83,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
     "django_filters",
 
-    # Local apps
     "accounts",
     "articles",
     "comments",
@@ -109,7 +113,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
-    # Custom admin-only API protection
     "admin_features.middleware.AdminOnlyAPIMiddleware",
 ]
 
@@ -164,6 +167,7 @@ USE_TZ = True
 # --------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -207,3 +211,20 @@ EMAIL_USE_TLS = True
 
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@example.com")
 CONTACT_EMAIL = env("CONTACT_EMAIL", default=DEFAULT_FROM_EMAIL)
+
+# --------------------------------------------------
+# LOGGING
+# --------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+}

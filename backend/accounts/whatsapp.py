@@ -1,4 +1,4 @@
-# accounts/whatsapp.py
+# backend/accounts/whatsapp.py
 
 import requests
 import logging
@@ -9,12 +9,8 @@ logger = logging.getLogger(__name__)
 
 def send_whatsapp_otp(phone_number: str, otp: str) -> None:
     """
-    Send OTP via WhatsApp Cloud API.
-
-    - phone_number: international format (+91XXXXXXXXXX)
-    - otp: 6 digit string
-
-    Raises Exception if sending fails.
+    Send OTP via WhatsApp Cloud API (plain text message)
+    phone_number: +91XXXXXXXXXX or 91XXXXXXXXXX
     """
 
     url = (
@@ -23,18 +19,16 @@ def send_whatsapp_otp(phone_number: str, otp: str) -> None:
         f"{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
     )
 
+    clean_phone = phone_number.replace("+", "").strip()
+
     payload = {
         "messaging_product": "whatsapp",
-        # Meta expects digits only (no +)
-        "to": phone_number.replace("+", ""),
+        "recipient_type": "individual",
+        "to": clean_phone,
         "type": "text",
         "text": {
-            "body": (
-                "🔐 Trilok Blog Verification\n\n"
-                f"Your OTP is: *{otp}*\n\n"
-                "This code expires in 10 minutes.\n"
-                "Do not share this code with anyone."
-            )
+            "preview_url": False,
+            "body": f"Your OTP is {otp}"
         },
     }
 
@@ -43,6 +37,10 @@ def send_whatsapp_otp(phone_number: str, otp: str) -> None:
         "Content-Type": "application/json",
     }
 
+    logger.warning("📤 WhatsApp OTP REQUEST")
+    logger.warning("URL: %s", url)
+    logger.warning("PAYLOAD: %s", payload)
+
     response = requests.post(
         url,
         json=payload,
@@ -50,12 +48,13 @@ def send_whatsapp_otp(phone_number: str, otp: str) -> None:
         timeout=15,
     )
 
-    if response.status_code not in (200, 201):
-        logger.error(
-            "WhatsApp OTP failed | status=%s | response=%s",
-            response.status_code,
-            response.text,
-        )
-        raise Exception("WhatsApp OTP send failed")
+    logger.warning(
+        "📥 WhatsApp OTP RESPONSE | status=%s | body=%s",
+        response.status_code,
+        response.text,
+    )
 
-    logger.info("WhatsApp OTP sent successfully to %s", phone_number)
+    if response.status_code not in (200, 201):
+        raise Exception(
+            f"WhatsApp OTP failed | {response.status_code} | {response.text}"
+        )
