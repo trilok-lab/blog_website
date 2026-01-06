@@ -1,5 +1,3 @@
-// frontend/app/article/[id].js
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -10,6 +8,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 
@@ -25,31 +24,27 @@ export default function ArticleDetail() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   /* ---------------- FETCH ARTICLE ---------------- */
 
   const loadArticle = async () => {
-    setLoading(true);
     try {
       const res = await getArticle(id);
       setArticle(res.data);
     } catch (err) {
       console.log("Article fetch error", err);
-    } finally {
-      setLoading(false);
     }
   };
 
-  /* ---------------- FETCH COMMENTS (PUBLIC) ---------------- */
+  /* ---------------- FETCH COMMENTS ---------------- */
 
   const loadComments = async () => {
     try {
       const res = await client.get(`/api/comments/?article=${id}`);
 
-      // backend returns ARRAY, not { results }
       const data = Array.isArray(res.data) ? res.data : [];
 
-      // latest → oldest
       data.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
@@ -61,10 +56,26 @@ export default function ArticleDetail() {
     }
   };
 
+  /* ---------------- INITIAL LOAD ---------------- */
+
   useEffect(() => {
-    loadArticle();
-    loadComments();
+    const loadAll = async () => {
+      setLoading(true);
+      await loadArticle();
+      await loadComments();
+      setLoading(false);
+    };
+
+    loadAll();
   }, [id]);
+
+  /* ---------------- PULL TO REFRESH ---------------- */
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadComments();
+    setRefreshing(false);
+  };
 
   /* ---------------- POST COMMENT ---------------- */
 
@@ -78,7 +89,7 @@ export default function ArticleDetail() {
         content: commentText,
       });
       setCommentText("");
-      loadComments();
+      await loadComments();
     } catch (err) {
       console.log("Comment submit error", err);
     } finally {
@@ -86,7 +97,7 @@ export default function ArticleDetail() {
     }
   };
 
-  /* ---------------- UI ---------------- */
+  /* ---------------- UI STATES ---------------- */
 
   if (loading) {
     return (
@@ -104,10 +115,18 @@ export default function ArticleDetail() {
     );
   }
 
+  /* ---------------- UI ---------------- */
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 40 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
     >
       {/* APP NAME */}
       <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>

@@ -1,4 +1,4 @@
-﻿import React from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,20 +8,43 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/theme/ThemeContext";
+import { listNotifications } from "../../src/api/notifications";
 
 export default function Menu() {
   const router = useRouter();
   const { theme } = useTheme();
-
   const isDark = theme === "dark";
 
-  const MenuButton = ({ title, onPress, color = "#1E90FF" }) => (
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    loadUnread();
+  }, []);
+
+  const loadUnread = async () => {
+    try {
+      const res = await listNotifications();
+      const items = res.data?.results || res.data || [];
+      const unread = items.filter((n) => !n.is_read).length;
+      setUnreadCount(unread);
+    } catch (e) {
+      console.log("unread count error", e);
+    }
+  };
+
+  const MenuButton = ({ title, onPress, color = "#1E90FF", badge }) => (
     <TouchableOpacity
       onPress={onPress}
       style={[styles.button, { backgroundColor: color }]}
       activeOpacity={0.85}
     >
       <Text style={styles.buttonText}>{title}</Text>
+
+      {badge > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -46,52 +69,31 @@ export default function Menu() {
         { backgroundColor: isDark ? "#121212" : "#F8F9FA" },
       ]}
     >
-      {/* HEADER */}
       <View style={styles.header}>
         <Text
           style={[
             styles.appName,
-            {
-              marginTop: 30,
-              marginBottom: 20,
-              color: isDark ? "#FFFFFF" : "#000000",
-            },
+            { color: isDark ? "#FFFFFF" : "#000000" },
           ]}
         >
           Trilok Blog App
         </Text>
-
         <Text
           style={[
             styles.pageTitle,
-            {
-              marginTop: 20,
-              marginBottom: 10,
-              color: isDark ? "#DDDDDD" : "#000000",
-            },
+            { color: isDark ? "#DDDDDD" : "#000000" },
           ]}
         >
           Menu
         </Text>
       </View>
 
-      {/* BROWSE */}
       <Section title="📖 Read Articles">
-        <MenuButton
-          title="📄 View Articles"
-          onPress={() => router.push("/article")}
-        />
-        <MenuButton
-          title="🖼 Slider Articles"
-          onPress={() => router.push("/article/slider")}
-        />
-        <MenuButton
-          title="🔥 Popular Articles"
-          onPress={() => router.push("/article/popular")}
-        />
+        <MenuButton title="📄 View Articles" onPress={() => router.push("/article")} />
+        <MenuButton title="🖼 Slider Articles" onPress={() => router.push("/article/slider")} />
+        <MenuButton title="🔥 Popular Articles" onPress={() => router.push("/article/popular")} />
       </Section>
 
-      {/* CONTRIBUTE */}
       <Section title="✍️ Contribute">
         <MenuButton
           title="👤➕ Submit Article (User)"
@@ -99,23 +101,19 @@ export default function Menu() {
         />
       </Section>
 
-      {/* SUPPORT */}
       <Section title="📞 Support">
+        <MenuButton title="☎ Contact Us" onPress={() => router.push("/contact")} />
+      </Section>
+
+      <Section title="🔔 Notifications">
         <MenuButton
-          title="☎ Contact Us"
-          onPress={() => router.push("/contact")}
+          title="🔔 View Notifications"
+          onPress={() => router.push("/notifications")}
+          color="#0D6EFD"
+          badge={unreadCount}
         />
       </Section>
 
-      {/* ADMIN */}
-      <Section title="🧑‍💼 Admin">
-        <MenuButton
-          title="🧑‍💼 Admin Panel"
-          onPress={() => router.push("/admin")}
-        />
-      </Section>
-
-      {/* SETTINGS */}
       <Section title="⚙ Settings">
         <MenuButton
           title="🎨 Theme Settings"
@@ -124,7 +122,6 @@ export default function Menu() {
         />
       </Section>
 
-      {/* LOGOUT */}
       <View style={styles.logoutSection}>
         <MenuButton
           title="🚪 Logout"
@@ -141,8 +138,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 60,
   },
-
-  /* HEADER */
   header: {
     marginBottom: 30,
   },
@@ -150,15 +145,13 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
+    marginTop: 30,
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginTop: 6,
-    marginLeft: 6,
+    marginTop: 10,
   },
-
-  /* SECTIONS */
   section: {
     marginBottom: 26,
   },
@@ -167,21 +160,35 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 10,
   },
-
-  /* BUTTONS */
   button: {
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
     marginBottom: 10,
+    position: "relative",
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },
-
-  /* LOGOUT */
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#DC3545",
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   logoutSection: {
     marginTop: 20,
   },
