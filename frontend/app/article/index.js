@@ -1,6 +1,4 @@
-﻿// frontend/app/article/index.js
-
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,10 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import {
-  listArticles,
-  listSlider,
-} from "../../src/api/articles";
+import { listArticles, listSlider } from "../../src/api/articles";
 
 export default function ArticleList({ mode = "view" }) {
   const router = useRouter();
@@ -30,7 +25,7 @@ export default function ArticleList({ mode = "view" }) {
 
   const debounceRef = useRef(null);
 
-  /* -------- FETCH DATA -------- */
+  /* ---------------- FETCH ARTICLES ---------------- */
 
   const loadArticles = async (q = "") => {
     setLoading(true);
@@ -43,19 +38,17 @@ export default function ArticleList({ mode = "view" }) {
         res = await listArticles(1, null, q ? { search: q } : {});
         setArticles(res.data?.results || []);
       }
-    } catch (e) {
-      console.log("Article fetch error", e);
+    } catch (err) {
+      console.log("Article fetch error", err);
     } finally {
       setLoading(false);
     }
   };
 
-  /* Initial load */
   useEffect(() => {
     loadArticles();
   }, [mode]);
 
-  /* Search only for VIEW mode */
   useEffect(() => {
     if (mode !== "view") return;
 
@@ -65,13 +58,12 @@ export default function ArticleList({ mode = "view" }) {
     }, 400);
   }, [search]);
 
-  /* -------- CARD -------- */
+  /* ---------------- CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
-      item.excerpt && item.excerpt.trim().length > 0
-        ? item.excerpt
-        : item.body?.slice(0, 120) + "...";
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 120) + "...";
 
     return (
       <TouchableOpacity
@@ -79,8 +71,13 @@ export default function ArticleList({ mode = "view" }) {
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
+        {/* IMAGE (ONLY IF EXISTS) */}
         {item.image && (
-          <Image source={{ uri: item.image }} style={styles.thumbnail} />
+          <Image
+            source={{ uri: item.image }}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
         )}
 
         <View style={styles.cardContent}>
@@ -109,7 +106,7 @@ export default function ArticleList({ mode = "view" }) {
         Trilok Blog App
       </Text>
 
-      {/* PAGE TITLE */}
+      {/* TITLE */}
       <Text style={styles.pageTitle}>{pageTitle}</Text>
 
       {/* SEARCH */}
@@ -136,7 +133,7 @@ export default function ArticleList({ mode = "view" }) {
   );
 }
 
-/* -------- STYLES -------- */
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   container: {
@@ -171,7 +168,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: 90,
-    height: "100%",
+    height: 90,
   },
   cardContent: {
     flex: 1,

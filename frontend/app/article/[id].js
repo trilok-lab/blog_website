@@ -8,7 +8,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 
@@ -24,9 +23,8 @@ export default function ArticleDetail() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
-  /* ---------------- FETCH ARTICLE ---------------- */
+  /* ---------------- FETCH DATA ---------------- */
 
   const loadArticle = async () => {
     try {
@@ -37,26 +35,19 @@ export default function ArticleDetail() {
     }
   };
 
-  /* ---------------- FETCH COMMENTS ---------------- */
-
   const loadComments = async () => {
     try {
       const res = await client.get(`/api/comments/?article=${id}`);
-
       const data = Array.isArray(res.data) ? res.data : [];
-
       data.sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
-
       setComments(data);
     } catch (err) {
       console.log("Comments fetch error", err);
       setComments([]);
     }
   };
-
-  /* ---------------- INITIAL LOAD ---------------- */
 
   useEffect(() => {
     const loadAll = async () => {
@@ -65,17 +56,8 @@ export default function ArticleDetail() {
       await loadComments();
       setLoading(false);
     };
-
     loadAll();
   }, [id]);
-
-  /* ---------------- PULL TO REFRESH ---------------- */
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadComments();
-    setRefreshing(false);
-  };
 
   /* ---------------- POST COMMENT ---------------- */
 
@@ -89,7 +71,7 @@ export default function ArticleDetail() {
         content: commentText,
       });
       setCommentText("");
-      await loadComments();
+      loadComments();
     } catch (err) {
       console.log("Comment submit error", err);
     } finally {
@@ -121,22 +103,13 @@ export default function ArticleDetail() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 40 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      }
     >
-      {/* APP NAME */}
       <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>
         Trilok Blog App
       </Text>
 
-      {/* ARTICLE TITLE */}
       <Text style={styles.title}>{article.title}</Text>
 
-      {/* CATEGORIES */}
       {article.categories?.length > 0 && (
         <View style={styles.categoryRow}>
           {article.categories.map((c) => (
@@ -147,29 +120,28 @@ export default function ArticleDetail() {
         </View>
       )}
 
-      {/* EXCERPT */}
       {article.excerpt && (
         <Text style={styles.excerpt}>{article.excerpt}</Text>
       )}
 
-      {/* IMAGE */}
+      {/* HERO IMAGE */}
       {article.image && (
-        <Image source={{ uri: article.image }} style={styles.image} />
+        <Image
+          source={{ uri: article.image }}
+          style={styles.image}
+          resizeMode="contain"
+        />
       )}
 
-      {/* BODY */}
       <Text style={styles.body}>{article.body}</Text>
 
-      {/* SEPARATOR */}
       <View style={styles.separator} />
 
-      {/* COMMENTS HEADER */}
       <Text style={styles.commentsHeader}>Comments</Text>
 
-      {/* COMMENT INPUT */}
       <View style={styles.commentBox}>
         <TextInput
-          placeholder="Write a comment…"
+          placeholder="Write a comment..."
           value={commentText}
           onChangeText={setCommentText}
           multiline
@@ -186,7 +158,6 @@ export default function ArticleDetail() {
         </TouchableOpacity>
       </View>
 
-      {/* COMMENT LIST */}
       {comments.length === 0 ? (
         <Text style={styles.noComments}>No comments yet.</Text>
       ) : (
@@ -214,31 +185,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "#F8F9FA",
   },
-
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-
   appName: {
     fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
   },
-
   title: {
     fontSize: 24,
     fontWeight: "800",
     marginBottom: 10,
   },
-
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 12,
   },
-
   category: {
     backgroundColor: "#E7F0FF",
     color: "#1E90FF",
@@ -250,53 +216,44 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-
   excerpt: {
     fontStyle: "italic",
     color: "#6C757D",
     fontSize: 15,
     marginBottom: 16,
   },
-
   image: {
     width: "100%",
-    height: 220,
-    borderRadius: 14,
-    marginBottom: 16,
+    height: 260,
+    borderRadius: 16,
+    marginBottom: 20,
   },
-
   body: {
     fontSize: 16,
     lineHeight: 24,
     color: "#212529",
   },
-
   separator: {
     height: 1,
     backgroundColor: "#DEE2E6",
     marginVertical: 30,
   },
-
   commentsHeader: {
     fontSize: 18,
     fontWeight: "700",
-    marginLeft: 4,
     marginBottom: 12,
   },
-
   commentBox: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 10,
     marginBottom: 20,
   },
-
   input: {
     minHeight: 60,
     fontSize: 15,
     marginBottom: 10,
   },
-
   postButton: {
     alignSelf: "flex-end",
     backgroundColor: "#1E90FF",
@@ -304,35 +261,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-
   postText: {
     color: "#fff",
     fontWeight: "700",
   },
-
   noComments: {
     color: "#6C757D",
     fontStyle: "italic",
     marginBottom: 20,
   },
-
   commentItem: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
-
   commentAuthor: {
     fontWeight: "700",
     marginBottom: 4,
   },
-
   commentContent: {
     fontSize: 14,
     marginBottom: 6,
   },
-
   commentDate: {
     fontSize: 12,
     color: "#6C757D",

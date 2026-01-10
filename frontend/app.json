@@ -2,6 +2,7 @@
   "expo": {
     "name": "BlogApp",
     "slug": "blogapp",
+    "scheme": "blogapp",
     "version": "1.0.0",
     "orientation": "portrait",
 
@@ -31,8 +32,8 @@
     },
 
     "extra": {
-      "EXPO_PUBLIC_API_URL": "https://receiving-wood-analytical-configuration.trycloudflare.com",
-      "EXPO_PUBLIC_FACEBOOK_APP_ID": 1881890119383543
+      "EXPO_PUBLIC_API_URL": "https://infections-became-shakespeare-developers.trycloudflare.com",
+      "EXPO_PUBLIC_FACEBOOK_APP_ID": "1881890119383543"
     }
   }
 }
