@@ -123,15 +123,6 @@ export default function ArticleDetail() {
       ]}
       contentContainerStyle={{ paddingBottom: 40 }}
     >
-      <Text
-        style={[
-          styles.appName,
-          { color: colors.text, marginTop: 30, marginBottom: 20 },
-        ]}
-      >
-        Trilok Blog App
-      </Text>
-
       <Text style={[styles.title, { color: colors.text }]}>
         {article.title}
       </Text>
@@ -294,7 +285,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "800",
-    marginBottom: 10,
+    marginTop: 50,
+    marginBottom: 20,
   },
   categoryRow: {
     flexDirection: "row",
@@ -333,7 +325,8 @@ const styles = StyleSheet.create({
   commentsHeader: {
     fontSize: 18,
     fontWeight: "700",
-    marginBottom: 12,
+    marginTop: 30,
+    marginBottom: 20,
   },
   commentBox: {
     borderRadius: 12,

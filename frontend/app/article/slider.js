@@ -93,15 +93,6 @@ export default function SliderArticles() {
         { backgroundColor: colors.background },
       ]}
     >
-      <Text
-        style={[
-          styles.appName,
-          { color: colors.text, marginTop: 30, marginBottom: 20 },
-        ]}
-      >
-        Trilok Blog App
-      </Text>
-
       <Text style={[styles.pageTitle, { color: colors.text }]}>
         Featured Articles
       </Text>
@@ -137,7 +128,8 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 20,
     fontWeight: "700",
-    marginBottom: 16,
+    marginTop: 50,
+    marginBottom: 20,
   },
 
   card: {

@@ -88,10 +88,6 @@ export default function SubmitArticleUser() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingBottom: 80 }}
     >
-      <Text style={[styles.appName, { color: colors.text }]}>
-        Trilok Blog App
-      </Text>
-
       <Text style={[styles.pageTitle, { color: colors.text }]}>
         Submit Article (User)
       </Text>
@@ -191,7 +187,7 @@ export default function SubmitArticleUser() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   appName: { fontSize: 26, fontWeight: "800", textAlign: "center", marginTop: 40 },
-  pageTitle: { fontSize: 22, fontWeight: "700", marginVertical: 30 },
+  pageTitle: { fontSize: 22, fontWeight: "700", marginTop: 30, marginBottom: 30, marginVertical: 30 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 },
   bodyInput: { height: 180, textAlignVertical: "top" },
   imageBtn: { padding: 12, borderRadius: 8, marginVertical: 10 },

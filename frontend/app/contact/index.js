@@ -1,6 +1,4 @@
-﻿// frontend/app/contact/index.js
-
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +12,8 @@ import { useRouter } from "expo-router";
 import client from "../../src/api/client";
 import { showSnackbar } from "../../src/components/Snackbar";
 import { useTheme } from "../../src/theme/ThemeContext";
+
+const HEADER_OFFSET = 30; // 🔧 tweak if needed
 
 export default function Contact() {
   const r = useRouter();
@@ -51,10 +51,12 @@ export default function Contact() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Contact Us</Text>
+      {/* PAGE TITLE */}
+      <Text style={[styles.title, { color: colors.text }]}>
+        Contact Us
+      </Text>
 
-      {[
-        ["Name", name, setName],
+      {[["Name", name, setName],
         ["Email", email, setEmail],
         ["Subject", subject, setSubject],
       ].map(([p, v, s], i) => (
@@ -74,12 +76,13 @@ export default function Contact() {
         value={message}
         onChangeText={setMessage}
         multiline
-        style={[styles.input, themedInput, { height: 140 }]}
+        style={[styles.input, themedInput, styles.messageBox]}
       />
 
       <TouchableOpacity
         onPress={send}
         style={[styles.btn, { backgroundColor: colors.primary }]}
+        disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="#fff" />
@@ -91,10 +94,42 @@ export default function Contact() {
   );
 }
 
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 30, marginBottom: 20, paddingTop: 50 },
-  input: { borderWidth: 1, padding: 10, marginVertical: 8, borderRadius: 8 },
-  btn: { padding: 14, borderRadius: 100, alignItems: "center", marginTop: 8 },
-  btnText: { color: "#fff", fontWeight: "700" },
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginTop: HEADER_OFFSET,
+    marginBottom: 20,
+  },
+
+  input: {
+    borderWidth: 1,
+    padding: 12,
+    marginVertical: 8,
+    borderRadius: 8,
+  },
+
+  messageBox: {
+    height: 140,
+    textAlignVertical: "top",
+  },
+
+  btn: {
+    padding: 14,
+    borderRadius: 100,
+    alignItems: "center",
+    marginTop: 12,
+  },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
 });

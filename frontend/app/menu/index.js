@@ -72,14 +72,6 @@ export default function Menu() {
       <View style={styles.header}>
         <Text
           style={[
-            styles.appName,
-            { color: isDark ? "#FFFFFF" : "#000000" },
-          ]}
-        >
-          Trilok Blog App
-        </Text>
-        <Text
-          style={[
             styles.pageTitle,
             { color: isDark ? "#DDDDDD" : "#000000" },
           ]}
@@ -126,7 +118,7 @@ export default function Menu() {
         <MenuButton
           title="🚪 Logout"
           color="#DC3545"
-          onPress={() => router.replace("/auth/login")}
+          onPress={() => router.replace("/auth/welcome")}
         />
       </View>
     </ScrollView>
@@ -139,7 +131,8 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   header: {
-    marginBottom: 30,
+    marginTop: 30,
+    marginBottom: 20,
   },
   appName: {
     fontSize: 26,

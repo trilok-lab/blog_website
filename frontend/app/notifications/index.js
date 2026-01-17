@@ -11,6 +11,8 @@ import {
 import { listNotifications, markRead } from "../../src/api/notifications";
 import { useTheme } from "../../src/theme/ThemeContext";
 
+const HEADER_OFFSET = 30; // 🔧 adjust if needed
+
 export default function NotificationsPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -18,6 +20,8 @@ export default function NotificationsPage() {
   const [groups, setGroups] = useState({ today: [], earlier: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  /* ---------------- LOAD DATA ---------------- */
 
   const load = async () => {
     try {
@@ -46,10 +50,11 @@ export default function NotificationsPage() {
     load();
   }, []);
 
+  /* ---------------- MARK READ ---------------- */
+
   const onPressItem = async (item) => {
     if (item.is_read) return;
 
-    // optimistic UI update
     setGroups((prev) => ({
       today: prev.today.map((n) =>
         n.id === item.id ? { ...n, is_read: true } : n
@@ -66,8 +71,10 @@ export default function NotificationsPage() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity activeOpacity={0.8} onPress={() => onPressItem(item)}>
+  /* ---------------- RENDER ITEM ---------------- */
+
+  const renderNotification = ({ item }) => (
+    <TouchableOpacity activeOpacity={0.85} onPress={() => onPressItem(item)}>
       <View
         style={[
           styles.card,
@@ -113,6 +120,8 @@ export default function NotificationsPage() {
     </TouchableOpacity>
   );
 
+  /* ---------------- BUILD LIST ---------------- */
+
   const buildListData = () => {
     const data = [];
 
@@ -129,12 +138,14 @@ export default function NotificationsPage() {
     return data;
   };
 
+  /* ---------------- LOADING ---------------- */
+
   if (loading) {
     return (
       <View
         style={[
           styles.center,
-          { backgroundColor: isDark ? "#121212" : "#FFF" },
+          { backgroundColor: isDark ? "#121212" : "#FFFFFF" },
         ]}
       >
         <ActivityIndicator size="large" />
@@ -142,15 +153,36 @@ export default function NotificationsPage() {
     );
   }
 
+  /* ---------------- UI ---------------- */
+
   return (
     <FlatList
+      data={buildListData()}
+      keyExtractor={(item, index) =>
+        item.type === "header" ? `h-${index}` : String(item.id)
+      }
       contentContainerStyle={[
         styles.container,
         { backgroundColor: isDark ? "#121212" : "#FFFFFF" },
       ]}
-      data={buildListData()}
-      keyExtractor={(item, index) =>
-        item.type === "header" ? `h-${index}` : String(item.id)
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            load();
+          }}
+        />
+      }
+      ListHeaderComponent={
+        <Text
+          style={[
+            styles.pageTitle,
+            { color: isDark ? "#FFFFFF" : "#000000" },
+          ]}
+        >
+          Notifications
+        </Text>
       }
       renderItem={({ item }) =>
         item.type === "header" ? (
@@ -163,17 +195,8 @@ export default function NotificationsPage() {
             {item.title}
           </Text>
         ) : (
-          renderItem({ item })
+          renderNotification({ item })
         )
-      }
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            load();
-          }}
-        />
       }
       ListEmptyComponent={
         <Text
@@ -190,10 +213,20 @@ export default function NotificationsPage() {
   );
 }
 
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    paddingBottom: 40,
     flexGrow: 1,
+  },
+
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginTop: HEADER_OFFSET,
+    marginBottom: 20,
   },
 
   center: {
