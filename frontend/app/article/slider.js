@@ -13,9 +13,11 @@ import {
 import { useRouter } from "expo-router";
 
 import { listSlider } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function SliderArticles() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +28,6 @@ export default function SliderArticles() {
     setLoading(true);
     try {
       const res = await listSlider();
-
-      // 🔥 IMPORTANT FIX: slider API is paginated
       setArticles(res.data?.results || []);
     } catch (error) {
       console.log("Slider article fetch error", error);
@@ -50,30 +50,35 @@ export default function SliderArticles() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.card }]}
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
-        {/* IMAGE (OPTIONAL) */}
         {item.image && (
           <Image source={{ uri: item.image }} style={styles.image} />
         )}
 
         <View style={styles.cardContent}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
 
-          {/* CATEGORIES */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
-                <Text key={c.id} style={styles.category}>
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
                   #{c.name}
                 </Text>
               ))}
             </View>
           )}
 
-          <Text style={styles.excerpt}>{excerpt}</Text>
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -82,14 +87,24 @@ export default function SliderArticles() {
   /* ---------------- UI ---------------- */
 
   return (
-    <View style={styles.container}>
-      {/* APP NAME */}
-      <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text
+        style={[
+          styles.appName,
+          { color: colors.text, marginTop: 30, marginBottom: 20 },
+        ]}
+      >
         Trilok Blog App
       </Text>
 
-      {/* PAGE TITLE */}
-      <Text style={styles.pageTitle}>Featured Articles</Text>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>
+        Featured Articles
+      </Text>
 
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
@@ -111,7 +126,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: "#F8F9FA",
   },
 
   appName: {
@@ -128,7 +142,6 @@ const styles = StyleSheet.create({
 
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 14,
     overflow: "hidden",
@@ -158,13 +171,11 @@ const styles = StyleSheet.create({
 
   category: {
     fontSize: 12,
-    color: "#1E90FF",
     marginRight: 8,
   },
 
   excerpt: {
     fontSize: 14,
-    color: "#495057",
     lineHeight: 20,
   },
 });

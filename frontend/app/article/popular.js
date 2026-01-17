@@ -13,9 +13,11 @@ import {
 import { useRouter } from "expo-router";
 
 import { listPopular } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function PopularArticles() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +28,9 @@ export default function PopularArticles() {
     setLoading(true);
     try {
       const res = await listPopular();
-
-      // Popular API is paginated-safe (but may also return array)
       const data = Array.isArray(res.data)
         ? res.data
         : res.data?.results || [];
-
       setArticles(data);
     } catch (error) {
       console.log("Popular article fetch error", error);
@@ -54,33 +53,44 @@ export default function PopularArticles() {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.card }]}
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
-        {/* IMAGE (OPTIONAL) */}
         {item.image && (
           <Image source={{ uri: item.image }} style={styles.image} />
         )}
 
         <View style={styles.cardContent}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
 
-          {/* VIEWS */}
-          <Text style={styles.views}>🔥 {item.popularity} views</Text>
+          <Text
+            style={[
+              styles.views,
+              { color: colors.danger },
+            ]}
+          >
+            🔥 {item.popularity} views
+          </Text>
 
-          {/* CATEGORIES */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
-                <Text key={c.id} style={styles.category}>
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
                   #{c.name}
                 </Text>
               ))}
             </View>
           )}
 
-          <Text style={styles.excerpt}>{excerpt}</Text>
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -89,14 +99,24 @@ export default function PopularArticles() {
   /* ---------------- UI ---------------- */
 
   return (
-    <View style={styles.container}>
-      {/* APP NAME */}
-      <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text
+        style={[
+          styles.appName,
+          { color: colors.text, marginTop: 30, marginBottom: 20 },
+        ]}
+      >
         Trilok Blog App
       </Text>
 
-      {/* PAGE TITLE */}
-      <Text style={styles.pageTitle}>Popular Articles</Text>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>
+        Popular Articles
+      </Text>
 
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
@@ -118,7 +138,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: "#F8F9FA",
   },
 
   appName: {
@@ -135,7 +154,6 @@ const styles = StyleSheet.create({
 
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 14,
     overflow: "hidden",
@@ -159,7 +177,6 @@ const styles = StyleSheet.create({
 
   views: {
     fontSize: 12,
-    color: "#DC3545",
     marginBottom: 4,
     fontWeight: "600",
   },
@@ -172,13 +189,11 @@ const styles = StyleSheet.create({
 
   category: {
     fontSize: 12,
-    color: "#1E90FF",
     marginRight: 8,
   },
 
   excerpt: {
     fontSize: 14,
-    color: "#495057",
     lineHeight: 20,
   },
 });

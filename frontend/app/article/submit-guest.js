@@ -1,4 +1,4 @@
-// app/article/submit-guest.js
+// frontend/app/article/submit-guest.js
 
 import React, { useState, useEffect } from "react";
 import {
@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Image,
+  StyleSheet,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -16,12 +17,13 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { submitArticle, getCategories } from "../../src/api/articles";
 import { sendOTP, verifyOTP } from "../../src/api/otp";
 import { startPayment } from "../../src/api/payments";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function SubmitGuestArticle() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { colors } = useTheme();
 
-  // ARTICLE FIELDS
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
@@ -29,236 +31,118 @@ export default function SubmitGuestArticle() {
   const [selectedCats, setSelectedCats] = useState([]);
   const [image, setImage] = useState(null);
 
-  // OTP
   const [mobile, setMobile] = useState("");
   const [otp, setOTP] = useState("");
   const [sessionId, setSessionId] = useState("");
-
-  // PAYMENT
   const [paymentId, setPaymentId] = useState("");
 
-  // Load incoming session_id if passed from older screens
   useEffect(() => {
-    if (params?.session_id) {
-      setSessionId(params.session_id);
-    }
+    if (params?.session_id) setSessionId(params.session_id);
   }, [params]);
 
-  // Load categories from backend
   useEffect(() => {
-    getCategories()
-      .then((res) => setCategories(res.data))
-      .catch(() => {});
+    getCategories().then((r) => setCategories(r.data || []));
   }, []);
 
-  // Pick image
   const pickImage = async () => {
-    let r = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
+    const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
     if (!r.canceled) setImage(r.assets[0]);
   };
 
-  // Category toggle
   const toggleCategory = (id) => {
-    if (selectedCats.includes(id)) {
-      setSelectedCats(selectedCats.filter((x) => x !== id));
-    } else {
-      setSelectedCats([...selectedCats, id]);
-    }
+    setSelectedCats((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
   };
 
-  // SEND OTP
-  const sendOtpNow = async () => {
-    if (!mobile) return Alert.alert("Please enter mobile number");
-
-    try {
-      const res = await sendOTP({ mobile_no: mobile });
-
-      // Backend may return session_id after sending OTP (debug mode)
-      const sid = res?.data?.session_id || "";
-      if (sid) setSessionId(sid);
-
-      Alert.alert("OTP sent!");
-    } catch (err) {
-      console.log("OTP SEND ERROR", err);
-      Alert.alert("Unable to send OTP");
-    }
-  };
-
-  // VERIFY OTP
-  const verifyOtpNow = async () => {
-    if (!sessionId) return Alert.alert("No session_id found. Send OTP first.");
-
-    try {
-      const res = await verifyOTP({
-        session_id: sessionId,
-        code: otp,
-      });
-
-      const sid = res?.data?.session_id || sessionId;
-      setSessionId(sid);
-
-      Alert.alert("OTP verified!");
-    } catch (err) {
-      console.log("OTP VERIFY ERROR", err);
-      Alert.alert("Invalid OTP");
-    }
-  };
-
-  // START PAYMENT
-  const startPaymentNow = async () => {
-    try {
-      const res = await startPayment();
-      setPaymentId(res.data.id);
-      Alert.alert("Payment started", "Complete payment in browser then return.");
-    } catch (e) {
-      console.log(e);
-      Alert.alert("Payment could not start");
-    }
-  };
-
-  // SUBMIT ARTICLE
-  const submit = async () => {
-    if (!sessionId) return Alert.alert("Please verify your phone number first!");
-    if (!paymentId) return Alert.alert("Start payment before submitting!");
-
-    const fd = new FormData();
-
-    fd.append("title", title);
-    fd.append("excerpt", excerpt);
-    fd.append("body", body);
-
-    selectedCats.forEach((id) => fd.append("category_ids", id));
-
-    if (image) {
-      fd.append("image", {
-        uri: image.uri,
-        type: "image/jpeg",
-        name: "article.jpg",
-      });
-    }
-
-    // REQUIRED BY BACKEND
-    fd.append("verification_session_id", sessionId);
-    fd.append("payment_id", paymentId);
-
-    try {
-      await submitArticle(fd);
-      Alert.alert("Success", "Article submitted!", [
-        { text: "OK", onPress: () => router.push("/article") },
-      ]);
-    } catch (err) {
-      console.log("SUBMIT ERR", err);
-      Alert.alert("Error submitting article");
-    }
+  const themedInput = {
+    backgroundColor: colors.inputBg,
+    color: colors.text,
+    borderColor: colors.border,
   };
 
   return (
-    <ScrollView style={{ padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 40 , paddingHorizontal: 10, paddingTop: 50}}>
+    <ScrollView
+      style={{ backgroundColor: colors.background, padding: 20 }}
+      contentContainerStyle={{ paddingBottom: 100 }}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>
         Guest Article Submission
       </Text>
 
-      {/* MOBILE */}
-      <TextInput
-        placeholder="Mobile number" value={mobile} onChangeText={setMobile} 
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}  keyboardType="phone-pad"
-      />
+      <TextInput placeholder="Mobile number" placeholderTextColor={colors.muted}
+        value={mobile} onChangeText={setMobile}
+        style={[styles.input, themedInput]} />
 
-      <TouchableOpacity
-        onPress={sendOtpNow}
-        style={{ backgroundColor: "#1E90FF", padding: 12, borderRadius: 8,  marginBottom: 10, }}
-      >
-        <Text style={{ color: "#fff", textAlign: "center" }}>Send OTP</Text>
+      <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]}
+        onPress={() => sendOTP({ mobile_no: mobile }).then(() => Alert.alert("OTP sent"))}>
+        <Text style={styles.btnText}>Send OTP</Text>
       </TouchableOpacity>
 
-      <TextInput
-        placeholder="Enter OTP" value={otp} onChangeText={setOTP}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-        keyboardType="number-pad"
-      />
+      <TextInput placeholder="OTP" placeholderTextColor={colors.muted}
+        value={otp} onChangeText={setOTP}
+        style={[styles.input, themedInput]} />
 
-      <TouchableOpacity
-        onPress={verifyOtpNow}
-        style={{ backgroundColor: "#19be5eff", padding: 12, borderRadius: 8, marginBottom: 10, }}
-      >
-        <Text style={{ color: "#fff", textAlign: "center" }}>Verify OTP</Text>
+      <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]}
+        onPress={() => verifyOTP({ session_id: sessionId, code: otp })
+          .then((r) => setSessionId(r.data.session_id))}>
+        <Text style={styles.btnText}>Verify OTP</Text>
       </TouchableOpacity>
 
-      {sessionId ? (
-        <Text style={{ color: "green", marginBottom: 10 }}>
-          OTP Verified ✔
-        </Text>
-      ) : null}
-
-      {/* PAYMENT */}
-      <TouchableOpacity
-        onPress={startPaymentNow}
-        style={{ backgroundColor: "#222", padding: 12, borderRadius: 8, marginBottom: 10, }}
-      >
-        <Text style={{ color: "#fff", textAlign: "center" }}>
-          Start Payment
-        </Text>
+      <TouchableOpacity style={[styles.btn, { backgroundColor: "#222" }]}
+        onPress={() => startPayment().then((r) => setPaymentId(r.data.id))}>
+        <Text style={styles.btnText}>Start Payment</Text>
       </TouchableOpacity>
 
-      {paymentId ? (
-        <Text style={{ color: "#1E90FF", marginBottom: 10 }}>
-          Payment ID: {paymentId}
-        </Text>
-      ) : null}
+      {[
+        ["Title", title, setTitle],
+        ["Excerpt", excerpt, setExcerpt],
+        ["Body", body, setBody],
+      ].map(([p, v, s], i) => (
+        <TextInput key={i} placeholder={p} placeholderTextColor={colors.muted}
+          value={v} onChangeText={s} multiline={p === "Body"}
+          style={[styles.input, themedInput, p === "Body" && { height: 160 }]} />
+      ))}
 
-      {/* ARTICLE FIELDS */}
-      <TextInput
-        placeholder="Title" value={title} onChangeText={setTitle}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      />
-
-      <TextInput
-        placeholder="Excerpt" value={excerpt} onChangeText={setExcerpt}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      />
-
-      <TextInput
-        placeholder="Body" value={body} onChangeText={setBody} multiline 
-        style={{ borderWidth: 1, padding: 10, height: 160,  marginBottom: 10, }} />
-
-      {/* Image */}
-      <TouchableOpacity
-        onPress={pickImage}
-        style={{ backgroundColor: "#1E90FF", padding: 12, borderRadius: 8, marginBottom: 10, }} >
-        <Text style={{ color: "#fff", textAlign: "center" }}>
-          Pick Image
-        </Text>
+      <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]}
+        onPress={pickImage}>
+        <Text style={styles.btnText}>Pick Image</Text>
       </TouchableOpacity>
 
-      {image && (
-        <Image
-          source={{ uri: image.uri }}
-          style={{ width: "100%", height: 200, marginBottom: 10 }} />
-      )}
+      {image && <Image source={{ uri: image.uri }} style={styles.image} />}
 
-      {/* Categories */}
-      <Text style={{ fontSize: 18, marginBottom: 10 }}>Categories</Text>
+      <Text style={{ color: colors.text, fontSize: 18, marginVertical: 10 }}>
+        Categories
+      </Text>
 
       {categories.map((c) => (
         <TouchableOpacity key={c.id} onPress={() => toggleCategory(c.id)}
-          style={{padding: 10,marginBottom: 6,backgroundColor: selectedCats.includes(c.id) ? "#1E90FF" : "#eee",borderRadius: 8,}}>
-          <Text
-            style={{color: selectedCats.includes(c.id) ? "#fff" : "#000",}}>
+          style={[styles.cat, {
+            backgroundColor: selectedCats.includes(c.id)
+              ? colors.primary
+              : colors.card,
+          }]}>
+          <Text style={{ color: selectedCats.includes(c.id) ? "#fff" : colors.text }}>
             {c.name}
           </Text>
         </TouchableOpacity>
       ))}
 
-      {/* Submit */}
-      <TouchableOpacity onPress={submit}
-        style={{backgroundColor: "#19be5eff",padding: 14,borderRadius: 8,marginVertical: 20,marginBottom: 100}} >
-        <Text style={{ color: "#fff", textAlign: "center" , }}>
-          Submit Article
-        </Text>
+      <TouchableOpacity
+        style={[styles.btn, { backgroundColor: colors.success, marginTop: 20 }]}
+        onPress={() => submitArticle({})}
+      >
+        <Text style={styles.btnText}>Submit Article</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  title: { fontSize: 28, fontWeight: "700", marginBottom: 30, paddingTop: 40 },
+  input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 10 },
+  btn: { padding: 12, borderRadius: 8, marginBottom: 10 },
+  btnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
+  image: { width: "100%", height: 200, marginBottom: 10 },
+  cat: { padding: 10, borderRadius: 8, marginBottom: 6 },
+});

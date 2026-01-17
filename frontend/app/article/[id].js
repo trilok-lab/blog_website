@@ -1,3 +1,5 @@
+// frontend/app/article/[id].js
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -13,9 +15,11 @@ import { useLocalSearchParams } from "expo-router";
 
 import { getArticle } from "../../src/api/articles";
 import client from "../../src/api/client";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function ArticleDetail() {
   const { id } = useLocalSearchParams();
+  const { colors } = useTheme();
 
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +87,12 @@ export default function ArticleDetail() {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View
+        style={[
+          styles.loader,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" />
       </View>
     );
@@ -91,8 +100,15 @@ export default function ArticleDetail() {
 
   if (!article) {
     return (
-      <View style={styles.loader}>
-        <Text>Article not found.</Text>
+      <View
+        style={[
+          styles.loader,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <Text style={{ color: colors.text }}>
+          Article not found.
+        </Text>
       </View>
     );
   }
@@ -101,19 +117,39 @@ export default function ArticleDetail() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
       contentContainerStyle={{ paddingBottom: 40 }}
     >
-      <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>
+      <Text
+        style={[
+          styles.appName,
+          { color: colors.text, marginTop: 30, marginBottom: 20 },
+        ]}
+      >
         Trilok Blog App
       </Text>
 
-      <Text style={styles.title}>{article.title}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>
+        {article.title}
+      </Text>
 
       {article.categories?.length > 0 && (
         <View style={styles.categoryRow}>
           {article.categories.map((c) => (
-            <Text key={c.id} style={styles.category}>
+            <Text
+              key={c.id}
+              style={[
+                styles.category,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.primary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
               {c.name}
             </Text>
           ))}
@@ -121,10 +157,11 @@ export default function ArticleDetail() {
       )}
 
       {article.excerpt && (
-        <Text style={styles.excerpt}>{article.excerpt}</Text>
+        <Text style={[styles.excerpt, { color: colors.muted }]}>
+          {article.excerpt}
+        </Text>
       )}
 
-      {/* HERO IMAGE */}
       {article.image && (
         <Image
           source={{ uri: article.image }}
@@ -133,22 +170,52 @@ export default function ArticleDetail() {
         />
       )}
 
-      <Text style={styles.body}>{article.body}</Text>
+      <Text style={[styles.body, { color: colors.text }]}>
+        {article.body}
+      </Text>
 
-      <View style={styles.separator} />
+      <View
+        style={[
+          styles.separator,
+          { backgroundColor: colors.border },
+        ]}
+      />
 
-      <Text style={styles.commentsHeader}>Comments</Text>
+      <Text
+        style={[
+          styles.commentsHeader,
+          { color: colors.text },
+        ]}
+      >
+        Comments
+      </Text>
 
-      <View style={styles.commentBox}>
+      <View
+        style={[
+          styles.commentBox,
+          { backgroundColor: colors.card },
+        ]}
+      >
         <TextInput
           placeholder="Write a comment..."
+          placeholderTextColor={colors.muted}
           value={commentText}
           onChangeText={setCommentText}
           multiline
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              borderColor: colors.border,
+            },
+          ]}
         />
         <TouchableOpacity
-          style={styles.postButton}
+          style={[
+            styles.postButton,
+            { backgroundColor: colors.primary },
+          ]}
           onPress={submitComment}
           disabled={posting}
         >
@@ -159,15 +226,45 @@ export default function ArticleDetail() {
       </View>
 
       {comments.length === 0 ? (
-        <Text style={styles.noComments}>No comments yet.</Text>
+        <Text
+          style={[
+            styles.noComments,
+            { color: colors.muted },
+          ]}
+        >
+          No comments yet.
+        </Text>
       ) : (
         comments.map((c) => (
-          <View key={c.id} style={styles.commentItem}>
-            <Text style={styles.commentAuthor}>
+          <View
+            key={c.id}
+            style={[
+              styles.commentItem,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            <Text
+              style={[
+                styles.commentAuthor,
+                { color: colors.text },
+              ]}
+            >
               {c.user_name || "User"}
             </Text>
-            <Text style={styles.commentContent}>{c.content}</Text>
-            <Text style={styles.commentDate}>
+            <Text
+              style={[
+                styles.commentContent,
+                { color: colors.text },
+              ]}
+            >
+              {c.content}
+            </Text>
+            <Text
+              style={[
+                styles.commentDate,
+                { color: colors.muted },
+              ]}
+            >
               {new Date(c.created_at).toDateString()}
             </Text>
           </View>
@@ -183,7 +280,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: "#F8F9FA",
   },
   loader: {
     flex: 1,
@@ -206,8 +302,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   category: {
-    backgroundColor: "#E7F0FF",
-    color: "#1E90FF",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -215,10 +309,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontSize: 13,
     fontWeight: "600",
+    borderWidth: 1,
   },
   excerpt: {
     fontStyle: "italic",
-    color: "#6C757D",
     fontSize: 15,
     marginBottom: 16,
   },
@@ -231,11 +325,9 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 16,
     lineHeight: 24,
-    color: "#212529",
   },
   separator: {
     height: 1,
-    backgroundColor: "#DEE2E6",
     marginVertical: 30,
   },
   commentsHeader: {
@@ -244,7 +336,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   commentBox: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 10,
     marginBottom: 20,
@@ -253,10 +344,12 @@ const styles = StyleSheet.create({
     minHeight: 60,
     fontSize: 15,
     marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
   },
   postButton: {
     alignSelf: "flex-end",
-    backgroundColor: "#1E90FF",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -266,12 +359,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   noComments: {
-    color: "#6C757D",
     fontStyle: "italic",
     marginBottom: 20,
   },
   commentItem: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -286,6 +377,5 @@ const styles = StyleSheet.create({
   },
   commentDate: {
     fontSize: 12,
-    color: "#6C757D",
   },
 });

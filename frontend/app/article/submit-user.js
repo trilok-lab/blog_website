@@ -15,88 +15,56 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 
 import { submitArticle, getCategories } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function SubmitArticleUser() {
   const router = useRouter();
-
-  /* ---------------- FORM STATE ---------------- */
+  const { colors } = useTheme();
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
-
   const [categories, setCategories] = useState([]);
   const [selectedCats, setSelectedCats] = useState([]);
-
   const [image, setImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  /* ---------------- LOAD CATEGORIES ---------------- */
-
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await getCategories();
-        // API returns paginated response
-        setCategories(res.data?.results || []);
-      } catch (err) {
-        console.log("Category load error", err);
-        Alert.alert("Error", "Failed to load categories.");
-      }
-    };
-
-    loadCategories();
+    getCategories()
+      .then((res) => setCategories(res.data?.results || []))
+      .catch(() => Alert.alert("Error", "Failed to load categories"));
   }, []);
 
-  /* ---------------- IMAGE PICKER ---------------- */
-
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const r = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       quality: 0.7,
     });
-
-    if (!result.canceled) {
-      setImage(result.assets[0]);
-    }
+    if (!r.canceled) setImage(r.assets[0]);
   };
-
-  /* ---------------- CATEGORY TOGGLE ---------------- */
 
   const toggleCategory = (id) => {
-    if (selectedCats.includes(id)) {
-      setSelectedCats(selectedCats.filter((c) => c !== id));
-    } else {
-      setSelectedCats([...selectedCats, id]);
-    }
+    setSelectedCats((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
-
-  /* ---------------- SUBMIT ---------------- */
 
   const submit = async () => {
     if (!title.trim() || !body.trim()) {
-      Alert.alert("Missing fields", "Title and body are required.");
-      return;
+      return Alert.alert("Error", "Title and body are required");
+    }
+    if (!selectedCats.length) {
+      return Alert.alert("Error", "Select at least one category");
     }
 
-    if (selectedCats.length === 0) {
-      Alert.alert("Select category", "Please select at least one category.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("excerpt", excerpt);
-    formData.append("body", body);
-
-    // ✅ DRF-safe category array
-    selectedCats.forEach((id) => {
-  formData.append("category_ids", id);
-    });
-
+    const fd = new FormData();
+    fd.append("title", title);
+    fd.append("excerpt", excerpt);
+    fd.append("body", body);
+    selectedCats.forEach((id) => fd.append("category_ids", id));
 
     if (image) {
-      formData.append("image", {
+      fd.append("image", {
         uri: image.uri,
         name: "article.jpg",
         type: "image/jpeg",
@@ -105,96 +73,114 @@ export default function SubmitArticleUser() {
 
     try {
       setSubmitting(true);
-      await submitArticle(formData);
-
-      Alert.alert(
-        "Submitted",
-        "Your article has been submitted for review."
-      );
+      await submitArticle(fd);
+      Alert.alert("Success", "Article submitted for review");
       router.replace("/article");
-    } catch (err) {
-      console.log("Submit error", err);
-      Alert.alert("Error", "Submission failed.");
+    } catch {
+      Alert.alert("Error", "Submission failed");
     } finally {
       setSubmitting(false);
     }
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 60 }}
-      keyboardShouldPersistTaps="handled"
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={{ paddingBottom: 80 }}
     >
-      {/* APP NAME */}
-      <Text style={styles.appName}>Trilok Blog App</Text>
+      <Text style={[styles.appName, { color: colors.text }]}>
+        Trilok Blog App
+      </Text>
 
-      {/* PAGE TITLE */}
-      <Text style={styles.pageTitle}>Submit Article (User)</Text>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>
+        Submit Article (User)
+      </Text>
 
-      <TextInput
-        placeholder="Title"
-        value={title}
-        onChangeText={setTitle}
-        style={styles.input}
-      />
-
-      <TextInput
-        placeholder="Short Excerpt"
-        value={excerpt}
-        onChangeText={setExcerpt}
-        style={styles.input}
-      />
+      {[["Title", title, setTitle],
+        ["Short Excerpt", excerpt, setExcerpt]].map(
+        ([p, v, s], i) => (
+          <TextInput
+            key={i}
+            placeholder={p}
+            placeholderTextColor={colors.muted}
+            value={v}
+            onChangeText={s}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+        )
+      )}
 
       <TextInput
         placeholder="Body"
+        placeholderTextColor={colors.muted}
         value={body}
         onChangeText={setBody}
         multiline
-        style={[styles.input, styles.bodyInput]}
+        style={[
+          styles.input,
+          styles.bodyInput,
+          {
+            backgroundColor: colors.inputBg,
+            color: colors.text,
+            borderColor: colors.border,
+          },
+        ]}
       />
 
-      <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
-        <Text style={styles.imageBtnText}>
-          Pick Feature Image (Optional)
-        </Text>
+      <TouchableOpacity
+        style={[styles.imageBtn, { backgroundColor: colors.primary }]}
+        onPress={pickImage}
+      >
+        <Text style={styles.btnText}>Pick Feature Image</Text>
       </TouchableOpacity>
 
       {image && (
         <Image source={{ uri: image.uri }} style={styles.previewImage} />
       )}
 
-      {/* CATEGORIES */}
-      <Text style={styles.sectionTitle}>Categories</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        Categories
+      </Text>
 
-      {categories.map((cat) => (
+      {categories.map((c) => (
         <TouchableOpacity
-          key={cat.id}
-          onPress={() => toggleCategory(cat.id)}
+          key={c.id}
+          onPress={() => toggleCategory(c.id)}
           style={[
             styles.categoryItem,
-            selectedCats.includes(cat.id) && styles.categorySelected,
+            {
+              backgroundColor: selectedCats.includes(c.id)
+                ? colors.primary
+                : colors.card,
+            },
           ]}
         >
           <Text
-            style={[
-              styles.categoryText,
-              selectedCats.includes(cat.id) && { color: "#fff" },
-            ]}
+            style={{
+              color: selectedCats.includes(c.id)
+                ? "#fff"
+                : colors.text,
+              fontWeight: "600",
+            }}
           >
-            {cat.name}
+            {c.name}
           </Text>
         </TouchableOpacity>
       ))}
 
       <TouchableOpacity
-        style={styles.submitBtn}
         onPress={submit}
         disabled={submitting}
+        style={[styles.submitBtn, { backgroundColor: colors.success }]}
       >
-        <Text style={styles.submitText}>
+        <Text style={styles.btnText}>
           {submitting ? "Submitting..." : "Submit"}
         </Text>
       </TouchableOpacity>
@@ -202,95 +188,16 @@ export default function SubmitArticleUser() {
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-    paddingHorizontal: 16,
-  },
-
-  appName: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-    marginTop: 40,
-  },
-
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginVertical: 30,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#CED4DA",
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-  },
-
-  bodyInput: {
-    height: 180,
-    textAlignVertical: "top",
-  },
-
-  imageBtn: {
-    backgroundColor: "#1E90FF",
-    padding: 12,
-    borderRadius: 6,
-    marginVertical: 10,
-  },
-
-  imageBtnText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "700",
-  },
-
-  previewImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginVertical: 10,
-  },
-
-  categoryItem: {
-    padding: 12,
-    borderRadius: 6,
-    backgroundColor: "#E9ECEF",
-    marginBottom: 8,
-  },
-
-  categorySelected: {
-    backgroundColor: "#1E90FF",
-  },
-
-  categoryText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-  submitBtn: {
-    backgroundColor: "#28A745",
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 30,
-  },
-
-  submitText: {
-    color: "#fff",
-    fontWeight: "800",
-    textAlign: "center",
-    fontSize: 16,
-  },
+  container: { flex: 1, padding: 16 },
+  appName: { fontSize: 26, fontWeight: "800", textAlign: "center", marginTop: 40 },
+  pageTitle: { fontSize: 22, fontWeight: "700", marginVertical: 30 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12 },
+  bodyInput: { height: 180, textAlignVertical: "top" },
+  imageBtn: { padding: 12, borderRadius: 8, marginVertical: 10 },
+  submitBtn: { padding: 16, borderRadius: 10, marginTop: 30 },
+  btnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
+  previewImage: { width: "100%", height: 200, borderRadius: 12, marginVertical: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginVertical: 10 },
+  categoryItem: { padding: 12, borderRadius: 8, marginBottom: 8 },
 });

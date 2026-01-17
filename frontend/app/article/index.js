@@ -1,4 +1,6 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+﻿// frontend/app/article/index.js
+
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,9 +14,11 @@ import {
 import { useRouter } from "expo-router";
 
 import { listArticles, listSlider } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function ArticleList({ mode = "view" }) {
   const router = useRouter();
+  const { colors } = useTheme();
 
   const pageTitle =
     mode === "slider" ? "Featured Articles" : "Articles";
@@ -67,11 +71,10 @@ export default function ArticleList({ mode = "view" }) {
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.card }]}
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
-        {/* IMAGE (ONLY IF EXISTS) */}
         {item.image && (
           <Image
             source={{ uri: item.image }}
@@ -81,41 +84,67 @@ export default function ArticleList({ mode = "view" }) {
         )}
 
         <View style={styles.cardContent}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
 
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
-                <Text key={c.id} style={styles.category}>
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
                   #{c.name}
                 </Text>
               ))}
             </View>
           )}
 
-          <Text style={styles.excerpt}>{excerpt}</Text>
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
         </View>
       </TouchableOpacity>
     );
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
-    <View style={styles.container}>
-      {/* APP NAME */}
-      <Text style={[styles.appName, { marginTop: 30, marginBottom: 20 }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text
+        style={[
+          styles.appName,
+          { color: colors.text, marginTop: 30, marginBottom: 20 },
+        ]}
+      >
         Trilok Blog App
       </Text>
 
-      {/* TITLE */}
-      <Text style={styles.pageTitle}>{pageTitle}</Text>
+      <Text style={[styles.pageTitle, { color: colors.text }]}>
+        {pageTitle}
+      </Text>
 
-      {/* SEARCH */}
       {mode === "view" && (
         <TextInput
           placeholder="Search articles..."
+          placeholderTextColor={colors.muted}
           value={search}
           onChangeText={setSearch}
-          style={styles.search}
+          style={[
+            styles.search,
+            {
+              backgroundColor: colors.inputBg,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
         />
       )}
 
@@ -139,59 +168,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: "#F8F9FA",
   },
+
   appName: {
     fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
   },
+
   pageTitle: {
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 16,
   },
+
   search: {
     borderWidth: 1,
-    borderColor: "#CED4DA",
     borderRadius: 10,
     padding: 12,
     marginBottom: 16,
-    backgroundColor: "#fff",
   },
+
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 14,
     overflow: "hidden",
   },
+
   thumbnail: {
     width: 90,
     height: 90,
   },
+
   cardContent: {
     flex: 1,
     padding: 12,
   },
+
   title: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
   },
+
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
+
   category: {
     fontSize: 12,
-    color: "#1E90FF",
     marginRight: 8,
   },
+
   excerpt: {
     fontSize: 14,
-    color: "#495057",
     lineHeight: 20,
   },
 });
