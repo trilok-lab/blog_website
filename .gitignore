@@ -62,3 +62,7 @@ extra/
 
 # Ignore old exported code text files
 old code txt files/
+
+
+backend/backend-code-*.txt
+frontend/frontend-code-*.txt

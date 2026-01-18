@@ -1,5 +1,3 @@
-// frontend/app/article/[id].js
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -16,6 +14,13 @@ import { useLocalSearchParams } from "expo-router";
 import { getArticle } from "../../src/api/articles";
 import client from "../../src/api/client";
 import { useTheme } from "../../src/theme/ThemeContext";
+
+/* ✅ NEW: normalize media URL */
+const resolveImageUrl = (image) => {
+  if (!image) return null;
+  if (image.startsWith("http")) return image;
+  return `${client.defaults.baseURL}${image}`;
+};
 
 export default function ArticleDetail() {
   const { id } = useLocalSearchParams();
@@ -113,6 +118,8 @@ export default function ArticleDetail() {
     );
   }
 
+  const imageUrl = resolveImageUrl(article.image);
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -153,9 +160,10 @@ export default function ArticleDetail() {
         </Text>
       )}
 
-      {article.image && (
+      {/* ✅ NEW IMAGE RENDER */}
+      {imageUrl && (
         <Image
-          source={{ uri: article.image }}
+          source={{ uri: imageUrl }}
           style={styles.image}
           resizeMode="contain"
         />
@@ -268,31 +276,16 @@ export default function ArticleDetail() {
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  appName: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-  },
+  container: { flex: 1, paddingHorizontal: 16 },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  appName: { fontSize: 26, fontWeight: "800", textAlign: "center" },
   title: {
     fontSize: 24,
     fontWeight: "800",
     marginTop: 50,
     marginBottom: 20,
   },
-  categoryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 12,
-  },
+  categoryRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
   category: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -303,36 +296,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     borderWidth: 1,
   },
-  excerpt: {
-    fontStyle: "italic",
-    fontSize: 15,
-    marginBottom: 16,
-  },
+  excerpt: { fontStyle: "italic", fontSize: 15, marginBottom: 16 },
   image: {
     width: "100%",
     height: 260,
     borderRadius: 16,
     marginBottom: 20,
   },
-  body: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  separator: {
-    height: 1,
-    marginVertical: 30,
-  },
+  body: { fontSize: 16, lineHeight: 24 },
+  separator: { height: 1, marginVertical: 30 },
   commentsHeader: {
     fontSize: 18,
     fontWeight: "700",
     marginTop: 30,
     marginBottom: 20,
   },
-  commentBox: {
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 20,
-  },
+  commentBox: { borderRadius: 12, padding: 10, marginBottom: 20 },
   input: {
     minHeight: 60,
     fontSize: 15,
@@ -347,28 +326,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  postText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  noComments: {
-    fontStyle: "italic",
-    marginBottom: 20,
-  },
-  commentItem: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-  },
-  commentAuthor: {
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  commentContent: {
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  commentDate: {
-    fontSize: 12,
-  },
+  postText: { color: "#fff", fontWeight: "700" },
+  noComments: { fontStyle: "italic", marginBottom: 20 },
+  commentItem: { borderRadius: 12, padding: 12, marginBottom: 12 },
+  commentAuthor: { fontWeight: "700", marginBottom: 4 },
+  commentContent: { fontSize: 14, marginBottom: 6 },
+  commentDate: { fontSize: 12 },
 });

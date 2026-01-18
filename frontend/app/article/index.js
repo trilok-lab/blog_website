@@ -1,6 +1,4 @@
-﻿// frontend/app/article/index.js
-
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +13,14 @@ import { useRouter } from "expo-router";
 
 import { listArticles, listSlider } from "../../src/api/articles";
 import { useTheme } from "../../src/theme/ThemeContext";
+import client from "../../src/api/client";
+
+/* ✅ NEW: normalize media URL */
+const resolveImageUrl = (image) => {
+  if (!image) return null;
+  if (image.startsWith("http")) return image;
+  return `${client.defaults.baseURL}${image}`;
+};
 
 export default function ArticleList({ mode = "view" }) {
   const router = useRouter();
@@ -55,7 +61,6 @@ export default function ArticleList({ mode = "view" }) {
 
   useEffect(() => {
     if (mode !== "view") return;
-
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       loadArticles(search);
@@ -69,15 +74,18 @@ export default function ArticleList({ mode = "view" }) {
       item.excerpt?.trim() ||
       item.body?.slice(0, 120) + "...";
 
+    const imageUrl = resolveImageUrl(item.image);
+
     return (
       <TouchableOpacity
         style={[styles.card, { backgroundColor: colors.card }]}
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
-        {item.image && (
+        {/* ✅ NEW IMAGE RENDER */}
+        {imageUrl && (
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: imageUrl }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
@@ -156,10 +164,7 @@ export default function ArticleList({ mode = "view" }) {
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
+  container: { flex: 1, paddingHorizontal: 16 },
 
   appName: {
     fontSize: 26,
