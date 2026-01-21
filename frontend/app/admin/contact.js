@@ -21,7 +21,12 @@ export default function AdminContact() {
     }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
 
   const markRead = async (id) => {
     try {

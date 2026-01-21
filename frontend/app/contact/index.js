@@ -12,8 +12,7 @@ import { useRouter } from "expo-router";
 import client from "../../src/api/client";
 import { showSnackbar } from "../../src/components/Snackbar";
 import { useTheme } from "../../src/theme/ThemeContext";
-
-const HEADER_OFFSET = 30; // 🔧 tweak if needed
+import AppShell from "../../src/components/AppShell";
 
 export default function Contact() {
   const r = useRouter();
@@ -50,70 +49,59 @@ export default function Contact() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* PAGE TITLE */}
-      <Text style={[styles.title, { color: colors.text }]}>
-        Contact Us
-      </Text>
+    <AppShell title="Contact Us">
+      <View style={styles.form}>
+        {[["Name", name, setName],
+          ["Email", email, setEmail],
+          ["Subject", subject, setSubject],
+        ].map(([p, v, s], i) => (
+          <TextInput
+            key={i}
+            placeholder={p}
+            placeholderTextColor={colors.muted}
+            value={v}
+            onChangeText={s}
+            style={[styles.input, themedInput]}
+          />
+        ))}
 
-      {[["Name", name, setName],
-        ["Email", email, setEmail],
-        ["Subject", subject, setSubject],
-      ].map(([p, v, s], i) => (
         <TextInput
-          key={i}
-          placeholder={p}
+          placeholder="Message"
           placeholderTextColor={colors.muted}
-          value={v}
-          onChangeText={s}
-          style={[styles.input, themedInput]}
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          style={[styles.input, themedInput, styles.messageBox]}
         />
-      ))}
 
-      <TextInput
-        placeholder="Message"
-        placeholderTextColor={colors.muted}
-        value={message}
-        onChangeText={setMessage}
-        multiline
-        style={[styles.input, themedInput, styles.messageBox]}
-      />
-
-      <TouchableOpacity
-        onPress={send}
-        style={[styles.btn, { backgroundColor: colors.primary }]}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.btnText}>Send</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          onPress={send}
+          style={[styles.btn, { backgroundColor: colors.primary }]}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnText}>Send</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </AppShell>
   );
 }
 
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    marginTop: HEADER_OFFSET,
-    marginBottom: 20,
+  form: {
+    paddingBottom: 40,
   },
 
   input: {
     borderWidth: 1,
     padding: 12,
     marginVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
   },
 
   messageBox: {
@@ -122,14 +110,15 @@ const styles = StyleSheet.create({
   },
 
   btn: {
-    padding: 14,
+    padding: 16,
     borderRadius: 100,
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 16,
   },
 
   btnText: {
     color: "#fff",
     fontWeight: "700",
+    fontSize: 16,
   },
 });

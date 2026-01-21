@@ -11,70 +11,52 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-import { listArticles, listSlider } from "../../src/api/articles";
-import { useTheme } from "../../src/theme/ThemeContext";
+import { listArticles } from "../../src/api/articles";
 import client from "../../src/api/client";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
 
-/* ✅ NEW: normalize media URL */
-const resolveImageUrl = (image) => {
-  if (!image) return null;
-  if (image.startsWith("http")) return image;
-  return `${client.defaults.baseURL}${image}`;
-};
+/* ---------------- IMAGE RESOLVER ---------------- */
 
-export default function ArticleList({ mode = "view" }) {
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function ArticleList() {
   const router = useRouter();
   const { colors } = useTheme();
-
-  const pageTitle =
-    mode === "slider" ? "Featured Articles" : "Articles";
 
   const [articles, setArticles] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const debounce = useRef(null);
 
-  const debounceRef = useRef(null);
+  /* ---------------- LOAD ARTICLES ---------------- */
 
-  /* ---------------- FETCH ARTICLES ---------------- */
-
-  const loadArticles = async (q = "") => {
+  const load = async (q = "") => {
     setLoading(true);
     try {
-      let res;
-      if (mode === "slider") {
-        res = await listSlider();
-        setArticles(res.data || []);
-      } else {
-        res = await listArticles(1, null, q ? { search: q } : {});
-        setArticles(res.data?.results || []);
-      }
-    } catch (err) {
-      console.log("Article fetch error", err);
+      const res = await listArticles(1, null, q ? { search: q } : {});
+      setArticles(res.data?.results || []);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadArticles();
-  }, [mode]);
+  useEffect(() => load(), []);
 
   useEffect(() => {
-    if (mode !== "view") return;
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      loadArticles(search);
-    }, 400);
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => load(search), 400);
   }, [search]);
 
-  /* ---------------- CARD ---------------- */
+  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
       item.excerpt?.trim() ||
       item.body?.slice(0, 120) + "...";
-
-    const imageUrl = resolveImageUrl(item.image);
 
     return (
       <TouchableOpacity
@@ -82,20 +64,19 @@ export default function ArticleList({ mode = "view" }) {
         activeOpacity={0.85}
         onPress={() => router.push(`/article/${item.id}`)}
       >
-        {/* ✅ NEW IMAGE RENDER */}
-        {imageUrl && (
+        {item.image && (
           <Image
-            source={{ uri: imageUrl }}
-            style={styles.thumbnail}
-            resizeMode="cover"
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
           />
         )}
 
-        <View style={styles.cardContent}>
+        <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>
             {item.title}
           </Text>
 
+          {/* 🔷 CATEGORIES (same style as Popular) */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
@@ -120,32 +101,21 @@ export default function ArticleList({ mode = "view" }) {
   /* ---------------- UI ---------------- */
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
-    >
-      <Text style={[styles.pageTitle, { color: colors.text }]}>
-        {pageTitle}
-      </Text>
-
-      {mode === "view" && (
-        <TextInput
-          placeholder="Search articles..."
-          placeholderTextColor={colors.muted}
-          value={search}
-          onChangeText={setSearch}
-          style={[
-            styles.search,
-            {
-              backgroundColor: colors.inputBg,
-              borderColor: colors.border,
-              color: colors.text,
-            },
-          ]}
-        />
-      )}
+    <AppShell title="Articles">
+      <TextInput
+        placeholder="Search articles..."
+        value={search}
+        onChangeText={setSearch}
+        placeholderTextColor={colors.muted}
+        style={[
+          styles.search,
+          {
+            backgroundColor: colors.inputBg,
+            borderColor: colors.border,
+            color: colors.text,
+          },
+        ]}
+      />
 
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
@@ -157,28 +127,13 @@ export default function ArticleList({ mode = "view" }) {
           contentContainerStyle={{ paddingBottom: 40 }}
         />
       )}
-    </View>
+    </AppShell>
   );
 }
 
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16 },
-
-  appName: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 50,
-    marginBottom: 20,
-  },
-
   search: {
     borderWidth: 1,
     borderRadius: 10,
@@ -188,17 +143,17 @@ const styles = StyleSheet.create({
 
   card: {
     flexDirection: "row",
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 14,
     overflow: "hidden",
   },
 
-  thumbnail: {
+  image: {
     width: 90,
-    height: 90,
+    height: "100%",
   },
 
-  cardContent: {
+  content: {
     flex: 1,
     padding: 12,
   },
@@ -218,6 +173,7 @@ const styles = StyleSheet.create({
   category: {
     fontSize: 12,
     marginRight: 8,
+    fontWeight: "600",
   },
 
   excerpt: {

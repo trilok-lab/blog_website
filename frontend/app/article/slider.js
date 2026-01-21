@@ -1,19 +1,22 @@
-// frontend/app/article/slider.js
-
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
   Image,
+  Text,
+  View,
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 
 import { listSlider } from "../../src/api/articles";
 import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+import client from "../../src/api/client";
+
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
 
 export default function SliderArticles() {
   const router = useRouter();
@@ -22,31 +25,23 @@ export default function SliderArticles() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ---------------- FETCH SLIDER ARTICLES ---------------- */
-
-  const loadSliderArticles = async () => {
-    setLoading(true);
-    try {
-      const res = await listSlider();
-      setArticles(res.data?.results || []);
-    } catch (error) {
-      console.log("Slider article fetch error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadSliderArticles();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await listSlider();
+        setArticles(res.data?.results || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
-
-  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
-      item.excerpt && item.excerpt.trim().length > 0
-        ? item.excerpt
-        : item.body?.slice(0, 140) + "...";
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 140) + "...";
 
     return (
       <TouchableOpacity
@@ -55,10 +50,13 @@ export default function SliderArticles() {
         onPress={() => router.push(`/article/${item.id}`)}
       >
         {item.image && (
-          <Image source={{ uri: item.image }} style={styles.image} />
+          <Image
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
+          />
         )}
 
-        <View style={styles.cardContent}>
+        <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>
             {item.title}
           </Text>
@@ -84,19 +82,8 @@ export default function SliderArticles() {
     );
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
-    >
-      <Text style={[styles.pageTitle, { color: colors.text }]}>
-        Featured Articles
-      </Text>
-
+    <AppShell title="Featured Articles">
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
@@ -107,65 +94,39 @@ export default function SliderArticles() {
           contentContainerStyle={{ paddingBottom: 40 }}
         />
       )}
-    </View>
+    </AppShell>
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-
-  appName: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 50,
-    marginBottom: 20,
-  },
-
   card: {
     flexDirection: "row",
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 14,
     overflow: "hidden",
   },
-
   image: {
     width: 120,
     height: "100%",
   },
-
-  cardContent: {
+  content: {
     flex: 1,
     padding: 12,
   },
-
   title: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
   },
-
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
-
   category: {
     fontSize: 12,
     marginRight: 8,
   },
-
   excerpt: {
     fontSize: 14,
     lineHeight: 20,

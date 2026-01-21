@@ -20,7 +20,12 @@ export default function AdminCategories() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
 
   const create = async () => {
     if (!name) return showSnackbar("Name required", "error");

@@ -21,7 +21,13 @@ export default function AdminArticles() {
     }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
+
 
   const approve = async (id) => {
     try {

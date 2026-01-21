@@ -21,7 +21,12 @@ export default function AdminComments() {
     }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
 
   const approve = async (id) => {
     try {

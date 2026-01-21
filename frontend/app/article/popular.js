@@ -1,19 +1,22 @@
-// frontend/app/article/popular.js
-
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
   Image,
+  Text,
+  View,
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 
 import { listPopular } from "../../src/api/articles";
 import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+import client from "../../src/api/client";
+
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
 
 export default function PopularArticles() {
   const router = useRouter();
@@ -22,34 +25,26 @@ export default function PopularArticles() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ---------------- FETCH POPULAR ARTICLES ---------------- */
-
-  const loadPopularArticles = async () => {
-    setLoading(true);
-    try {
-      const res = await listPopular();
-      const data = Array.isArray(res.data)
-        ? res.data
-        : res.data?.results || [];
-      setArticles(data);
-    } catch (error) {
-      console.log("Popular article fetch error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadPopularArticles();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await listPopular();
+        const data = Array.isArray(res.data)
+          ? res.data
+          : res.data?.results || [];
+        setArticles(data);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
-
-  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
-      item.excerpt && item.excerpt.trim().length > 0
-        ? item.excerpt
-        : item.body?.slice(0, 120) + "...";
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 120) + "...";
 
     return (
       <TouchableOpacity
@@ -58,20 +53,18 @@ export default function PopularArticles() {
         onPress={() => router.push(`/article/${item.id}`)}
       >
         {item.image && (
-          <Image source={{ uri: item.image }} style={styles.image} />
+          <Image
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
+          />
         )}
 
-        <View style={styles.cardContent}>
+        <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]}>
             {item.title}
           </Text>
 
-          <Text
-            style={[
-              styles.views,
-              { color: colors.danger },
-            ]}
-          >
+          <Text style={[styles.views, { color: colors.danger }]}>
             🔥 {item.popularity} views
           </Text>
 
@@ -96,19 +89,8 @@ export default function PopularArticles() {
     );
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
-    >
-      <Text style={[styles.pageTitle, { color: colors.text }]}>
-        Popular Articles
-      </Text>
-
+    <AppShell title="Popular Articles">
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
@@ -119,71 +101,44 @@ export default function PopularArticles() {
           contentContainerStyle={{ paddingBottom: 40 }}
         />
       )}
-    </View>
+    </AppShell>
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-
-  appName: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 50,
-    marginBottom: 20,
-  },
-
   card: {
     flexDirection: "row",
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 14,
     overflow: "hidden",
   },
-
   image: {
     width: 90,
     height: "100%",
   },
-
-  cardContent: {
+  content: {
     flex: 1,
     padding: 12,
   },
-
   title: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 2,
   },
-
   views: {
     fontSize: 12,
     marginBottom: 4,
     fontWeight: "600",
   },
-
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
-
   category: {
     fontSize: 12,
     marginRight: 8,
   },
-
   excerpt: {
     fontSize: 14,
     lineHeight: 20,
