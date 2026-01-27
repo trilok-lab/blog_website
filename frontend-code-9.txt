@@ -1,0 +1,4051 @@
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\_layout.js =====
+
+import { Stack } from "expo-router";
+import { ThemeProvider } from "../src/theme/ThemeContext";
+import Snackbar from "../src/components/Snackbar";
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+      <Snackbar />
+    </ThemeProvider>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\index.js =====
+
+import { Redirect } from "expo-router";
+
+export default function Index() {
+  return <Redirect href="/article" />;
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\admin\articles.js =====
+
+// frontend/app/admin/articles.js
+import React, { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+
+export default function AdminArticles() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = async () => {
+    setLoading(true);
+    try {
+      const res = await client.get("/admin/articles/");
+      setItems(res.data || []);
+    } catch (e) {
+      console.log("admin article error", e);
+      showSnackbar("Failed to load admin articles", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
+
+
+  const approve = async (id) => {
+    try {
+      await client.patch(`/admin/articles/${id}/`, { is_approved: true });
+      fetch();
+      showSnackbar("Article approved", "success");
+    } catch (e) {
+      console.log(e);
+      showSnackbar("Approval failed", "error");
+    }
+  };
+
+  return (
+    <ScrollView style={{ padding: 20 }}>
+      <Text style={{ fontSize: 26 }}>Pending Articles</Text>
+      {loading && <ActivityIndicator size="large" style={{ marginTop: 20 }} />}
+      {items.map((a) => (
+        <TouchableOpacity key={a.id} style={{ backgroundColor: "#eee", padding: 14, borderRadius: 10, marginVertical: 10 }}>
+          <Text style={{ fontSize: 18 }}>{a.title}</Text>
+          <TouchableOpacity onPress={() => approve(a.id)} style={{ backgroundColor: "green", padding: 10, marginTop: 10, borderRadius: 8 }}>
+            <Text style={{ color: "white" }}>Approve</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\admin\categories.js =====
+
+// frontend/app/admin/categories.js
+import React, { useEffect, useState } from "react";
+import { ScrollView, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+
+export default function AdminCategories() {
+  const [items, setItems] = useState([]);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await client.get("/admin/categories/");
+      setItems(res.data || []);
+    } catch (e) {
+      console.log("cat err", e);
+      showSnackbar("Failed to load categories", "error");
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
+
+  const create = async () => {
+    if (!name) return showSnackbar("Name required", "error");
+    try {
+      await client.post("/admin/categories/", { name });
+      setName("");
+      load();
+      showSnackbar("Created", "success");
+    } catch (e) {
+      console.log("create cat", e);
+      showSnackbar("Create failed", "error");
+    }
+  };
+
+  return (
+    <ScrollView style={{ padding: 16 }}>
+      <Text style={{ fontSize: 22, marginBottom: 12 }}>Categories</Text>
+      <TextInput placeholder="New category name" value={name} onChangeText={setName} style={{ borderWidth: 1, padding: 10, marginBottom: 8 }} />
+      <TouchableOpacity onPress={create} style={{ backgroundColor: "#1E90FF", padding: 10, borderRadius: 8, marginBottom: 12 }}>
+        <Text style={{ color: "#fff" }}>Create</Text>
+      </TouchableOpacity>
+      {loading && <ActivityIndicator size="large" />}
+      {items.map((c) => (
+        <Text key={c.id} style={{ padding: 10, backgroundColor: "#fff", marginBottom: 8, borderRadius: 8 }}>{c.name}</Text>
+      ))}
+    </ScrollView>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\admin\comments.js =====
+
+// frontend/app/admin/comments.js
+import React, { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+
+export default function AdminComments() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = async () => {
+    setLoading(true);
+    try {
+      const res = await client.get("/admin/comments/");
+      setItems(res.data || []);
+    } catch (e) {
+      console.log("admin comments err", e);
+      showSnackbar("Failed to load comments", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
+
+  const approve = async (id) => {
+    try {
+      await client.patch(`/admin/comments/${id}/`, { approved: true });
+      fetch();
+      showSnackbar("Comment approved", "success");
+    } catch (e) {
+      console.log(e);
+      showSnackbar("Approval failed", "error");
+    }
+  };
+
+  return (
+    <ScrollView style={{ padding: 20 }}>
+      <Text style={{ fontSize: 26 }}>Pending Comments</Text>
+      {loading && <ActivityIndicator size="large" />}
+      {items.map((c) => (
+        <TouchableOpacity key={c.id} style={{ backgroundColor: "#f1f1f1", padding: 14, marginVertical: 10, borderRadius: 10 }}>
+          <Text style={{ fontWeight: "700" }}>{c.user_name || c.guest_name}</Text>
+          <Text>{c.content}</Text>
+          <TouchableOpacity onPress={() => approve(c.id)} style={{ backgroundColor: "green", padding: 10, marginTop: 10, borderRadius: 8 }}>
+            <Text style={{ color: "white" }}>Approve</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\admin\contact.js =====
+
+// frontend/app/admin/contact.js
+import React, { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+
+export default function AdminContact() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = async () => {
+    setLoading(true);
+    try {
+      const res = await client.get("/contact/admin/list/");
+      setItems(res.data?.results || res.data || []);
+    } catch (e) {
+      console.log("contact admin err", e);
+      showSnackbar("Failed to load contact messages", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const run = async () => {
+      await fetch();
+    };
+    run();
+  }, []);
+
+  const markRead = async (id) => {
+    try {
+      await client.patch(`/contact/${id}/read/`, { is_read: true });
+      fetch();
+      showSnackbar("Marked read", "success");
+    } catch (e) {
+      console.log("mark read err", e);
+      showSnackbar("Failed to mark read", "error");
+    }
+  };
+
+  return (
+    <ScrollView style={{ padding: 20 }}>
+      <Text style={{ fontSize: 26 }}>Contact Messages</Text>
+      {loading && <ActivityIndicator size="large" />}
+      {items.map((m) => (
+        <TouchableOpacity key={m.id} style={{ padding: 16, backgroundColor: m.is_read ? "#e7ffe7" : "#ffe7e7", borderRadius: 10, marginVertical: 10 }}>
+          <Text style={{ fontSize: 18 }}>{m.subject}</Text>
+          <Text>{m.name} — {m.email}</Text>
+          <Text style={{ marginTop: 8 }}>{m.message}</Text>
+          {!m.is_read && (
+            <TouchableOpacity onPress={() => markRead(m.id)} style={{ backgroundColor: "green", padding: 10, marginTop: 10, borderRadius: 8 }}>
+              <Text style={{ color: "white" }}>Mark as Read</Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\admin\index.js =====
+
+// frontend/app/admin/index.js
+import React from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+
+export default function AdminDashboard() {
+  const router = useRouter();
+
+  return (
+    <ScrollView style={{ padding: 20 }}>
+      <Text style={{ fontSize: 40, marginBottom: 12 , paddingHorizontal: 20, paddingTop: 40}}>Admin Panel</Text>
+
+      <TouchableOpacity onPress={() => router.push("/admin/articles")} style={{ padding: 12, backgroundColor: "#242424e7", marginBottom: 12, borderRadius: 8 }}>
+        <Text style={{ color: "#fff" }}>Articles</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push("/admin/comments")} style={{ padding: 12, backgroundColor: "#242424e7", marginBottom: 12, borderRadius: 8 }}>
+        <Text style={{ color: "#fff" }}>Comments</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push("/admin/contact")} style={{ padding: 12, backgroundColor: "#242424e7", marginBottom: 12, borderRadius: 8 }}>
+        <Text style={{ color: "#fff" }}>Contact</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\[id].js =====
+
+// frontend/app/article/[id].js
+
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+
+import { getArticle } from "../../src/api/articles";
+import client from "../../src/api/client";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+
+/* ---------- helpers ---------- */
+
+const resolveImageUrl = (image) => {
+  if (!image) return null;
+  if (image.startsWith("http")) return image;
+  return `${client.defaults.baseURL}${image}`;
+};
+
+/* ---------- component ---------- */
+
+export default function ArticleDetail() {
+  const { id } = useLocalSearchParams();
+  const { colors } = useTheme();
+
+  const [article, setArticle] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+
+  /* ---------- data loaders ---------- */
+
+  const loadArticle = async () => {
+    const res = await getArticle(id);
+    setArticle(res.data);
+  };
+
+  const loadComments = async () => {
+    const res = await client.get(`/api/comments/?article=${id}`);
+    const data = Array.isArray(res.data) ? res.data : [];
+    data.sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+    setComments(data);
+  };
+
+  /* ---------- effects ---------- */
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAll = async () => {
+      try {
+        if (!mounted) return;
+        setLoading(true);
+        await loadArticle();
+        await loadComments();
+      } catch (e) {
+        console.log("Article detail load error", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadAll();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  /* ---------- actions ---------- */
+
+  const submitComment = async () => {
+    if (!commentText.trim()) return;
+
+    setPosting(true);
+    try {
+      await client.post("/api/comments/", {
+        article: id,
+        content: commentText,
+      });
+      setCommentText("");
+      loadComments();
+    } catch (e) {
+      console.log("Comment submit error", e);
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  /* ---------- UI states ---------- */
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.loader,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!article) {
+    return (
+      <View
+        style={[
+          styles.loader,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <Text style={{ color: colors.text }}>
+          Article not found
+        </Text>
+      </View>
+    );
+  }
+
+  const imageUrl = resolveImageUrl(article.image);
+
+  /* ---------- render ---------- */
+
+  return (
+    <AppShell title={article.title}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        {article.categories?.length > 0 && (
+          <View style={styles.categoryRow}>
+            {article.categories.map((c) => (
+              <Text
+                key={c.id}
+                style={[
+                  styles.category,
+                  {
+                    backgroundColor: colors.card,
+                    color: colors.primary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {c.name}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        {article.excerpt && (
+          <Text
+            style={[styles.excerpt, { color: colors.muted }]}
+          >
+            {article.excerpt}
+          </Text>
+        )}
+
+        {imageUrl && (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        )}
+
+        <Text style={[styles.body, { color: colors.text }]}>
+          {article.body}
+        </Text>
+
+        <View
+          style={[
+            styles.separator,
+            { backgroundColor: colors.border },
+          ]}
+        />
+
+        <Text
+          style={[
+            styles.commentsHeader,
+            { color: colors.text },
+          ]}
+        >
+          Comments
+        </Text>
+
+        <View
+          style={[
+            styles.commentBox,
+            { backgroundColor: colors.card },
+          ]}
+        >
+          <TextInput
+            placeholder="Write a comment..."
+            placeholderTextColor={colors.muted}
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+          <TouchableOpacity
+            style={[
+              styles.postButton,
+              { backgroundColor: colors.primary },
+            ]}
+            onPress={submitComment}
+            disabled={posting}
+          >
+            <Text style={styles.postText}>
+              {posting ? "Posting..." : "Post"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {comments.length === 0 ? (
+          <Text
+            style={[
+              styles.noComments,
+              { color: colors.muted },
+            ]}
+          >
+            No comments yet.
+          </Text>
+        ) : (
+          comments.map((c) => (
+            <View
+              key={c.id}
+              style={[
+                styles.commentItem,
+                { backgroundColor: colors.card },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.commentAuthor,
+                  { color: colors.text },
+                ]}
+              >
+                {c.user_name || "User"}
+              </Text>
+              <Text
+                style={[
+                  styles.commentContent,
+                  { color: colors.text },
+                ]}
+              >
+                {c.content}
+              </Text>
+              <Text
+                style={[
+                  styles.commentDate,
+                  { color: colors.muted },
+                ]}
+              >
+                {new Date(c.created_at).toDateString()}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </AppShell>
+  );
+}
+
+/* ---------- styles ---------- */
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 12,
+  },
+  category: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: "600",
+    borderWidth: 1,
+  },
+  excerpt: {
+    fontStyle: "italic",
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  image: {
+    width: "100%",
+    height: 260,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  separator: {
+    height: 1,
+    marginVertical: 30,
+  },
+  commentsHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+  commentBox: {
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 20,
+  },
+  input: {
+    minHeight: 60,
+    fontSize: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+  },
+  postButton: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  postText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  noComments: {
+    fontStyle: "italic",
+    marginBottom: 20,
+  },
+  commentItem: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  commentAuthor: {
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  commentContent: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  commentDate: {
+    fontSize: 12,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\index.js =====
+
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  ActivityIndicator,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from "react-native";
+import { useRouter } from "expo-router";
+
+import { listArticles } from "../../src/api/articles";
+import client from "../../src/api/client";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+
+/* ---------------- IMAGE RESOLVER ---------------- */
+
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function ArticleList() {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  const [articles, setArticles] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const debounce = useRef(null);
+
+  /* ---------------- LOAD ARTICLES ---------------- */
+
+  const load = async (q = "") => {
+    setLoading(true);
+    try {
+      const res = await listArticles(1, null, q ? { search: q } : {});
+      setArticles(res.data?.results || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => load(), []);
+
+  useEffect(() => {
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => load(search), 400);
+  }, [search]);
+
+  /* ---------------- RENDER CARD ---------------- */
+
+  const renderItem = ({ item }) => {
+    const excerpt =
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 120) + "...";
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        activeOpacity={0.85}
+        onPress={() => router.push(`/article/${item.id}`)}
+      >
+        {item.image && (
+          <Image
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
+          />
+        )}
+
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
+
+          {/* 🔷 CATEGORIES (same style as Popular) */}
+          {item.categories?.length > 0 && (
+            <View style={styles.categoryRow}>
+              {item.categories.map((c) => (
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
+                  #{c.name}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  /* ---------------- UI ---------------- */
+
+  return (
+    <AppShell title="Articles">
+      <TextInput
+        placeholder="Search articles..."
+        value={search}
+        onChangeText={setSearch}
+        placeholderTextColor={colors.muted}
+        style={[
+          styles.search,
+          {
+            backgroundColor: colors.inputBg,
+            borderColor: colors.border,
+            color: colors.text,
+          },
+        ]}
+      />
+
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={articles}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        />
+      )}
+    </AppShell>
+  );
+}
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  search: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+
+  card: {
+    flexDirection: "row",
+    borderRadius: 14,
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+
+  image: {
+    width: 90,
+    height: "100%",
+  },
+
+  content: {
+    flex: 1,
+    padding: 12,
+  },
+
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 6,
+  },
+
+  category: {
+    fontSize: 12,
+    marginRight: 8,
+    fontWeight: "600",
+  },
+
+  excerpt: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\popular.js =====
+
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Text,
+  View,
+  StyleSheet,
+} from "react-native";
+import { useRouter } from "expo-router";
+
+import { listPopular } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+import client from "../../src/api/client";
+
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
+
+export default function PopularArticles() {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await listPopular();
+        const data = Array.isArray(res.data)
+          ? res.data
+          : res.data?.results || [];
+        setArticles(data);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const renderItem = ({ item }) => {
+    const excerpt =
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 120) + "...";
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        activeOpacity={0.85}
+        onPress={() => router.push(`/article/${item.id}`)}
+      >
+        {item.image && (
+          <Image
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
+          />
+        )}
+
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
+
+          <Text style={[styles.views, { color: colors.danger }]}>
+            🔥 {item.popularity} views
+          </Text>
+
+          {item.categories?.length > 0 && (
+            <View style={styles.categoryRow}>
+              {item.categories.map((c) => (
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
+                  #{c.name}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <AppShell title="Popular Articles">
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={articles}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        />
+      )}
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    borderRadius: 14,
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+  image: {
+    width: 90,
+    height: "100%",
+  },
+  content: {
+    flex: 1,
+    padding: 12,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  views: {
+    fontSize: 12,
+    marginBottom: 4,
+    fontWeight: "600",
+  },
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 6,
+  },
+  category: {
+    fontSize: 12,
+    marginRight: 8,
+  },
+  excerpt: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\slider.js =====
+
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Text,
+  View,
+  StyleSheet,
+} from "react-native";
+import { useRouter } from "expo-router";
+
+import { listSlider } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+import client from "../../src/api/client";
+
+const resolveImageUrl = (img) =>
+  img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
+
+export default function SliderArticles() {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await listSlider();
+        setArticles(res.data?.results || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const renderItem = ({ item }) => {
+    const excerpt =
+      item.excerpt?.trim() ||
+      item.body?.slice(0, 140) + "...";
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        activeOpacity={0.85}
+        onPress={() => router.push(`/article/${item.id}`)}
+      >
+        {item.image && (
+          <Image
+            source={{ uri: resolveImageUrl(item.image) }}
+            style={styles.image}
+          />
+        )}
+
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {item.title}
+          </Text>
+
+          {item.categories?.length > 0 && (
+            <View style={styles.categoryRow}>
+              {item.categories.map((c) => (
+                <Text
+                  key={c.id}
+                  style={[styles.category, { color: colors.primary }]}
+                >
+                  #{c.name}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.excerpt, { color: colors.muted }]}>
+            {excerpt}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <AppShell title="Featured Articles">
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={articles}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        />
+      )}
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    borderRadius: 14,
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+  image: {
+    width: 120,
+    height: "100%",
+  },
+  content: {
+    flex: 1,
+    padding: 12,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 6,
+  },
+  category: {
+    fontSize: 12,
+    marginRight: 8,
+  },
+  excerpt: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\submit-guest.js =====
+
+import React, { useState, useEffect } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  StyleSheet,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+
+import { getCategories } from "../../src/api/articles";
+import AppShell from "../../src/components/AppShell";
+
+export default function SubmitGuestArticle() {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [image, setImage] = useState(null);
+
+  useEffect(() => {
+    getCategories().then((r) => setCategories(r.data || []));
+  }, []);
+
+  return (
+    <AppShell title="Submit Article (Guest)">
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+        <TextInput placeholder="Title" style={styles.input} />
+        <TextInput placeholder="Body" multiline style={[styles.input, styles.body]} />
+
+        <TouchableOpacity style={styles.btn}>
+          <Text style={styles.btnText}>Verify OTP (Later Phase)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.btn}>
+          <Text style={styles.btnText}>Payment (Later Phase)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.submit}>
+          <Text style={styles.btnText}>Submit</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  input: { borderWidth: 1, padding: 12, borderRadius: 8, marginBottom: 12 },
+  body: { height: 160 },
+  btn: { padding: 14, backgroundColor: "#6c757d", borderRadius: 10, marginBottom: 10 },
+  submit: { padding: 16, backgroundColor: "#28a745", borderRadius: 12 },
+  btnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\article\submit-user.js =====
+
+import React, { useState, useEffect } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  Image,
+  StyleSheet,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+
+import { submitArticle, getCategories } from "../../src/api/articles";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+
+export default function SubmitArticleUser() {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [body, setBody] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [selectedCats, setSelectedCats] = useState([]);
+  const [image, setImage] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    getCategories().then((r) => setCategories(r.data?.results || []));
+  }, []);
+
+  const pickImage = async () => {
+    const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    if (!r.canceled) setImage(r.assets[0]);
+  };
+
+  const toggleCategory = (id) => {
+    setSelectedCats((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const submit = async () => {
+    if (!title || !body || !selectedCats.length) {
+      return Alert.alert("Error", "All required fields missing");
+    }
+
+    const fd = new FormData();
+    fd.append("title", title);
+    fd.append("excerpt", excerpt);
+    fd.append("body", body);
+    selectedCats.forEach((id) => fd.append("category_ids", id));
+
+    if (image) {
+      fd.append("image", {
+        uri: image.uri,
+        name: "article.jpg",
+        type: "image/jpeg",
+      });
+    }
+
+    try {
+      setSubmitting(true);
+      await submitArticle(fd);
+      Alert.alert("Success", "Article submitted");
+      router.replace("/article");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AppShell title="Submit Article (User)">
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+        <TextInput
+          placeholder="Title"
+          placeholderTextColor={colors.muted}
+          value={title}
+          onChangeText={setTitle}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              borderColor: colors.border,
+            },
+          ]}
+        />
+
+        <TextInput
+          placeholder="Short Excerpt"
+          placeholderTextColor={colors.muted}
+          value={excerpt}
+          onChangeText={setExcerpt}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              borderColor: colors.border,
+            },
+          ]}
+        />
+
+        <TextInput
+          placeholder="Body"
+          placeholderTextColor={colors.muted}
+          value={body}
+          onChangeText={setBody}
+          multiline
+          style={[
+            styles.input,
+            styles.body,
+            {
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              borderColor: colors.border,
+            },
+          ]}
+        />
+
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: colors.primary }]}
+          onPress={pickImage}
+        >
+          <Text style={styles.btnText}>Pick Feature Image</Text>
+        </TouchableOpacity>
+
+        {image && <Image source={{ uri: image.uri }} style={styles.image} />}
+
+        <Text style={[styles.section, { color: colors.text }]}>
+          Categories
+        </Text>
+
+        {categories.map((c) => {
+          const active = selectedCats.includes(c.id);
+          return (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => toggleCategory(c.id)}
+              style={[
+                styles.cat,
+                {
+                  backgroundColor: active
+                    ? colors.primary
+                    : colors.card,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: active ? "#fff" : colors.text,
+                  fontWeight: "600",
+                }}
+              >
+                {c.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <TouchableOpacity
+          style={[styles.submit, { backgroundColor: colors.success }]}
+          onPress={submit}
+          disabled={submitting}
+        >
+          <Text style={styles.btnText}>
+            {submitting ? "Submitting..." : "Submit"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  input: {
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  body: {
+    height: 160,
+    textAlignVertical: "top",
+  },
+  btn: {
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  submit: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  btnText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+  image: {
+    height: 200,
+    borderRadius: 12,
+    marginVertical: 12,
+  },
+  section: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginVertical: 10,
+  },
+  cat: {
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\login.js =====
+
+// frontend/app/auth/login.js
+import React, { useState } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
+
+import { loginUser } from "../../src/api/auth";
+import { saveTokens } from "../../src/utils/token";
+
+export default function Login() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function onLogin() {
+    if (!username || !password) {
+      return Alert.alert("Error", "Enter username and password");
+    }
+
+    try {
+      const res = await loginUser({ username, password });
+
+      await saveTokens({
+        access: res.access,
+        refresh: res.refresh,
+      });
+
+      router.replace("/menu");
+    } catch (err) {
+      Alert.alert("Login failed", "Invalid credentials");
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Login</Text>
+
+      <View style={styles.card}>
+        <TextInput
+          placeholder="Username or Email"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+          secureTextEntry
+        />
+
+        <Pressable style={styles.primaryBtn} onPress={onLogin}>
+          <Text style={styles.primaryText}>Login</Text>
+        </Pressable>
+
+        <View style={styles.divider} />
+
+        <Pressable
+          style={styles.socialBtn}
+          onPress={() => router.push("/auth/social?provider=google")}
+        >
+          <Text style={styles.socialText}>Continue with Google</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.socialBtn, styles.fb]}
+          onPress={() => router.push("/auth/social?provider=facebook")}
+        >
+          <Text style={[styles.socialText, { color: "#fff" }]}>
+            Continue with Facebook
+          </Text>
+        </Pressable>
+
+        <Pressable onPress={() => router.push("/auth/otp-request")}>
+          <Text style={styles.link}>Create an account</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: "#f8f9fa" },
+  header: { fontSize: 24, fontWeight: "600", marginBottom: 16 },
+  card: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 8,
+    borderColor: "#dee2e6",
+    borderWidth: 1,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 10,
+  },
+  primaryBtn: {
+    backgroundColor: "#0d6efd",
+    padding: 14,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  primaryText: { color: "#fff", fontWeight: "600" },
+  divider: { height: 1, backgroundColor: "#dee2e6", marginVertical: 16 },
+  socialBtn: {
+    padding: 14,
+    borderRadius: 6,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    marginBottom: 10,
+  },
+  fb: { backgroundColor: "#1877f2", borderColor: "#1877f2" },
+  socialText: { fontWeight: "600" },
+  link: { marginTop: 10, color: "#0d6efd", textAlign: "center" },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\otp-request.js =====
+
+// frontend/app/auth/otp-request.js
+
+import React, { useState } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter } from "expo-router";
+
+import { requestPhoneCode } from "../../src/api/auth";
+
+export default function OtpRequest() {
+  const router = useRouter();
+
+  const [mobile, setMobile] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const sendOtp = async () => {
+    if (!mobile.trim()) {
+      Alert.alert("Error", "Please enter mobile number");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await requestPhoneCode(mobile.trim());
+
+      router.push({
+        pathname: "/auth/otp-verify",
+        params: {
+          session_id: res.session_id,
+          mobile_no: mobile.trim(),
+        },
+      });
+    } catch (err) {
+      Alert.alert("Failed", err?.body?.detail || "Unable to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.appName}>Trilok Blog App</Text>
+        <Text style={styles.step}>Step 1 of 3</Text>
+
+        <Text style={styles.title}>Verify Mobile Number</Text>
+        <Text style={styles.subtitle}>
+          Enter your mobile number to receive a verification code
+        </Text>
+
+        <TextInput
+          placeholder="+91XXXXXXXXXX"
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="phone-pad"
+          style={styles.input}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={sendOtp}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Sending..." : "Send OTP"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 24,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+  },
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  step: {
+    textAlign: "center",
+    color: "#6C757D",
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6C757D",
+    textAlign: "center",
+    marginBottom: 30,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#CED4DA",
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: "#1E90FF",
+    padding: 16,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "700",
+    textAlign: "center",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\otp-verify.js =====
+
+// frontend/app/auth/otp-verify.js
+
+import React, { useEffect, useState } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+
+import { verifyPhoneCode, requestPhoneCode } from "../../src/api/auth";
+
+export default function OtpVerify() {
+  const router = useRouter();
+  const { session_id, mobile_no } = useLocalSearchParams();
+
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  /* ---------------- ROUTE GUARD (SAFE) ---------------- */
+  useEffect(() => {
+    if (!session_id || !mobile_no) {
+      router.replace("/auth/otp-request");
+    }
+  }, [session_id, mobile_no]);
+
+  /* ---------------- VERIFY OTP ---------------- */
+  const verifyOtp = async () => {
+    if (otp.trim().length !== 6) {
+      Alert.alert("Invalid OTP", "Enter a 6-digit OTP");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await verifyPhoneCode(session_id, otp.trim());
+
+      router.push({
+        pathname: "/auth/register",
+        params: { session_id, mobile_no },
+      });
+    } catch (err) {
+      Alert.alert("Error", err?.body?.detail || "Invalid OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- RESEND OTP ---------------- */
+  const resendOtp = async () => {
+    try {
+      setResending(true);
+      await requestPhoneCode(mobile_no);
+      Alert.alert("OTP Sent", "New OTP has been sent");
+    } catch {
+      Alert.alert("Error", "Failed to resend OTP");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  /* ---------------- UI ---------------- */
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.appName}>Trilok Blog App</Text>
+        <Text style={styles.step}>Step 2 of 3</Text>
+
+        <Text style={styles.title}>Enter OTP</Text>
+        <Text style={styles.subtitle}>Sent to {mobile_no}</Text>
+
+        <TextInput
+          placeholder="6-digit OTP"
+          value={otp}
+          onChangeText={setOtp}
+          keyboardType="number-pad"
+          maxLength={6}
+          style={styles.input}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={verifyOtp}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Verifying..." : "Verify OTP"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={resendOtp} disabled={resending}>
+          <Text style={styles.link}>
+            {resending ? "Resending..." : "Resend OTP"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 24,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+  },
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  step: {
+    textAlign: "center",
+    color: "#6C757D",
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  subtitle: {
+    textAlign: "center",
+    color: "#6C757D",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+    textAlign: "center",
+  },
+  button: {
+    backgroundColor: "#1E90FF",
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 20,
+  },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+  link: {
+    textAlign: "center",
+    color: "#1E90FF",
+    fontWeight: "600",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\register.js =====
+
+// frontend/app/auth/register.js
+
+import React, { useEffect, useState } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+
+import { registerUser, loginUser } from "../../src/api/auth";
+import { saveTokens } from "../../src/utils/token";
+
+export default function Register() {
+  const router = useRouter();
+  const { session_id, mobile_no } = useLocalSearchParams();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  /* ---------------- ROUTE GUARD (SAFE) ---------------- */
+  useEffect(() => {
+    if (!session_id || !mobile_no) {
+      router.replace("/auth/otp-request");
+    }
+  }, [session_id, mobile_no]);
+
+  const passwordStrength =
+    password.length < 6 ? "Weak" :
+    password.length < 10 ? "Medium" : "Strong";
+
+  /* ---------------- REGISTER ---------------- */
+  const register = async () => {
+    if (!username.trim()) {
+      Alert.alert("Error", "Username is required");
+      return;
+    }
+
+    if (password !== password2) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await registerUser({
+        username,
+        email,
+        password,
+        password2,
+        mobile_no,
+        verification_session_id: session_id,
+      });
+
+      // Auto login
+      const res = await loginUser({ username, password });
+      await saveTokens(res);
+
+      router.replace("/menu");
+    } catch (err) {
+      Alert.alert(
+        "Registration failed",
+        err?.body?.detail || "Unable to create account"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- UI ---------------- */
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.appName}>Trilok Blog App</Text>
+        <Text style={styles.step}>Step 3 of 3</Text>
+
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Mobile verified: {mobile_no}</Text>
+
+        <TextInput
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          placeholder="Email (optional)"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+        />
+
+        <TextInput
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+        />
+
+        <Text style={styles.strength}>
+          Password strength: {passwordStrength}
+        </Text>
+
+        <TextInput
+          placeholder="Confirm Password"
+          secureTextEntry
+          value={password2}
+          onChangeText={setPassword2}
+          style={styles.input}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={register}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Creating..." : "Create Account"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 24,
+    backgroundColor: "#F8F9FA",
+    justifyContent: "center",
+  },
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  step: {
+    textAlign: "center",
+    color: "#6C757D",
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6C757D",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+    marginBottom: 12,
+  },
+  strength: {
+    fontSize: 13,
+    color: "#6C757D",
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: "#28A745",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\social.js =====
+
+// frontend/app/auth/social.js
+
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Alert } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import Constants from "expo-constants";
+
+import { socialLogin } from "../../src/api/auth";
+import { saveTokens } from "../../src/utils/token";
+
+WebBrowser.maybeCompleteAuthSession();
+
+export default function SocialAuth() {
+  const router = useRouter();
+  const { provider } = useLocalSearchParams();
+  const triggeredRef = useRef(false);
+
+  const FACEBOOK_APP_ID =
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_FACEBOOK_APP_ID;
+
+  // ✅ REQUIRED FOR FACEBOOK (Expo Go)
+  const redirectUri = AuthSession.makeRedirectUri({
+    useProxy: true,
+  });
+
+  // ---------- GOOGLE ----------
+  const [googleRequest, googleResponse, googlePromptAsync] =
+    Google.useAuthRequest({
+      expoClientId:
+        "993534453505-rds2dij88nvld0fvjr15jpj9dgehf4ir.apps.googleusercontent.com",
+      androidClientId:
+        "993534453505-rds2dij88nvld0fvjr15jpj9dgehf4ir.apps.googleusercontent.com",
+      iosClientId:
+        "993534453505-rds2dij88nvld0fvjr15jpj9dgehf4ir.apps.googleusercontent.com",
+      webClientId:
+        "993534453505-rds2dij88nvld0fvjr15jpj9dgehf4ir.apps.googleusercontent.com",
+    });
+
+  // ---------- FACEBOOK ----------
+  const [fbRequest, fbResponse, fbPromptAsync] =
+    Facebook.useAuthRequest({
+      clientId: FACEBOOK_APP_ID,
+      redirectUri,              // ✅ FIX
+      responseType: "token",    // ✅ REQUIRED
+    });
+
+  // ---------- TRIGGER ONCE ----------
+  useEffect(() => {
+    if (triggeredRef.current) return;
+
+    if (provider === "google" && googleRequest) {
+      triggeredRef.current = true;
+      googlePromptAsync();
+    }
+
+    if (provider === "facebook" && fbRequest) {
+      triggeredRef.current = true;
+      fbPromptAsync();
+    }
+  }, [provider, googleRequest, fbRequest]);
+
+  // ---------- GOOGLE RESPONSE ----------
+  useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const token = googleResponse.authentication?.accessToken;
+      if (token) handleSocialLogin("google", token);
+    }
+  }, [googleResponse]);
+
+  // ---------- FACEBOOK RESPONSE ----------
+  useEffect(() => {
+    if (fbResponse?.type === "success") {
+      const token = fbResponse.authentication?.accessToken;
+      if (token) handleSocialLogin("facebook", token);
+    }
+  }, [fbResponse]);
+
+  // ---------- COMMON ----------
+  async function handleSocialLogin(provider, token) {
+    try {
+      const res = await socialLogin(provider, token);
+
+      await saveTokens({
+        access: res.access,
+        refresh: res.refresh,
+      });
+
+      router.replace("/menu");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Login failed", "Social login failed");
+      router.replace("/auth/login");
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>
+        Redirecting to {provider}…
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+  },
+  text: {
+    fontSize: 16,
+    color: "#495057",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\auth\welcome.js =====
+
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { loginUser } from "../../src/api/auth";
+import { saveTokens } from "../../src/utils/token";
+
+export default function Welcome() {
+  const r = useRouter();
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
+
+  const login = async () => {
+    const res = await loginUser({ username: u, password: p });
+    await saveTokens(res);
+    r.replace("/menu");
+  };
+
+  return (
+    <View style={{ padding: 24, justifyContent: "center", flex: 1 }}>
+      <Text style={{ fontSize: 32, textAlign: "center", marginBottom: 20 }}>
+        Welcome
+      </Text>
+
+      <TextInput placeholder="Username / Email" value={u} onChangeText={setU}
+        style={{ borderWidth: 1, padding: 12, marginBottom: 10 }} />
+
+      <TextInput placeholder="Password" secureTextEntry value={p} onChangeText={setP}
+        style={{ borderWidth: 1, padding: 12, marginBottom: 16 }} />
+
+      <TouchableOpacity onPress={login}
+        style={{ backgroundColor: "#1E90FF", padding: 14, marginBottom: 10 }}>
+        <Text style={{ color: "#fff", textAlign: "center" }}>Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => r.push("/auth/register")}
+        style={{ borderWidth: 1, padding: 14, marginBottom: 20 }}>
+        <Text style={{ textAlign: "center" }}>Register</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => r.push("/auth/social?provider=google")}
+        style={{ padding: 14, backgroundColor: "#eee", marginBottom: 10 }}>
+        <Text style={{ textAlign: "center" }}>Continue with Google</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => r.push("/auth/social?provider=facebook")}
+        style={{ padding: 14, backgroundColor: "#eee" }}>
+        <Text style={{ textAlign: "center" }}>Continue with Facebook</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\comments\add.js =====
+
+// frontend/app/comments/add.js
+
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+
+import client from "../../src/api/client";
+import { useAuthStore } from "../../src/store/authStore";
+import { showSnackbar } from "../../src/components/Snackbar";
+import { useTheme } from "../../src/theme/ThemeContext";
+
+export default function AddComment() {
+  const { id } = useLocalSearchParams(); // article id
+  const router = useRouter();
+  const auth = useAuthStore();
+  const { colors } = useTheme();
+
+  const [guestName, setGuestName] = useState("");
+  const [guestMobile, setGuestMobile] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  /* ---------------- SUBMIT ---------------- */
+
+  const submit = async () => {
+    if (!content.trim()) {
+      Alert.alert("Error", "Please enter a comment.");
+      return;
+    }
+
+    if (!auth?.user) {
+      if (!guestName || !guestMobile || !sessionId) {
+        Alert.alert(
+          "Error",
+          "Guest must fill all fields including OTP session."
+        );
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const payload = { article: id, content };
+
+      if (!auth?.user) {
+        payload.guest_name = guestName;
+        payload.guest_mobile = guestMobile;
+        payload.verification_session_id = sessionId;
+      }
+
+      await client.post("/comments/", payload);
+      showSnackbar(
+        "Comment submitted (may require admin approval)",
+        "success"
+      );
+      setTimeout(() => router.back(), 500);
+    } catch (e) {
+      console.log(e);
+      Alert.alert(
+        "Error",
+        e.response?.data?.detail || "Failed to submit comment"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ---------------- UI ---------------- */
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background },
+      ]}
+    >
+      <Text
+        style={[
+          styles.title,
+          { color: colors.text },
+        ]}
+      >
+        Add Comment
+      </Text>
+
+      {!auth?.user && (
+        <>
+          <TextInput
+            placeholder="Your Name"
+            placeholderTextColor={colors.muted}
+            value={guestName}
+            onChangeText={setGuestName}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+
+          <TextInput
+            placeholder="Mobile Number"
+            placeholderTextColor={colors.muted}
+            keyboardType="number-pad"
+            value={guestMobile}
+            onChangeText={setGuestMobile}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+
+          <TextInput
+            placeholder="OTP Verification Session ID"
+            placeholderTextColor={colors.muted}
+            value={sessionId}
+            onChangeText={setSessionId}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+        </>
+      )}
+
+      <TextInput
+        placeholder="Write your comment..."
+        placeholderTextColor={colors.muted}
+        value={content}
+        onChangeText={setContent}
+        multiline
+        style={[
+          styles.commentBox,
+          {
+            backgroundColor: colors.inputBg,
+            color: colors.text,
+            borderColor: colors.border,
+          },
+        ]}
+      />
+
+      <TouchableOpacity
+        onPress={submit}
+        disabled={loading}
+        style={[
+          styles.submitBtn,
+          { backgroundColor: colors.primary },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.submitText}>Submit</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 40,
+    paddingTop: 50,
+    textAlign: "center",
+  },
+
+  input: {
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    fontSize: 15,
+  },
+
+  commentBox: {
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 10,
+    height: 120,
+    textAlignVertical: "top",
+    fontSize: 15,
+  },
+
+  submitBtn: {
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+
+  submitText: {
+    textAlign: "center",
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\contact\index.js =====
+
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
+import { useRouter } from "expo-router";
+
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+
+export default function Contact() {
+  const r = useRouter();
+  const { colors } = useTheme();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const send = async () => {
+    setLoading(true);
+    try {
+      await client.post("/contact/submit/", {
+        name,
+        email,
+        subject,
+        message,
+      });
+      showSnackbar("Message sent — we'll reply soon", "success");
+      setTimeout(() => r.back(), 900);
+    } catch {
+      showSnackbar("Network error", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const themedInput = {
+    backgroundColor: colors.inputBg,
+    color: colors.text,
+    borderColor: colors.border,
+  };
+
+  return (
+    <AppShell title="Contact Us">
+      <View style={styles.form}>
+        {[["Name", name, setName],
+          ["Email", email, setEmail],
+          ["Subject", subject, setSubject],
+        ].map(([p, v, s], i) => (
+          <TextInput
+            key={i}
+            placeholder={p}
+            placeholderTextColor={colors.muted}
+            value={v}
+            onChangeText={s}
+            style={[styles.input, themedInput]}
+          />
+        ))}
+
+        <TextInput
+          placeholder="Message"
+          placeholderTextColor={colors.muted}
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          style={[styles.input, themedInput, styles.messageBox]}
+        />
+
+        <TouchableOpacity
+          onPress={send}
+          style={[styles.btn, { backgroundColor: colors.primary }]}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnText}>Send</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </AppShell>
+  );
+}
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  form: {
+    paddingBottom: 40,
+  },
+
+  input: {
+    borderWidth: 1,
+    padding: 12,
+    marginVertical: 8,
+    borderRadius: 10,
+  },
+
+  messageBox: {
+    height: 140,
+    textAlignVertical: "top",
+  },
+
+  btn: {
+    padding: 16,
+    borderRadius: 100,
+    alignItems: "center",
+    marginTop: 16,
+  },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\menu\index.js =====
+
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import AppShell from "../../src/components/AppShell";
+import { useTheme } from "../../src/theme/ThemeContext";
+
+export default function Menu() {
+  const r = useRouter();
+  const { theme, toggleTheme } = useTheme();
+
+  const Item = ({ label, path }) => (
+    <TouchableOpacity style={styles.item} onPress={() => r.push(path)}>
+      <Text style={styles.text}>{label}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <AppShell>
+      <View style={styles.container}>
+        <Item label="📰 Articles" path="/article" />
+        <Item label="🔥 Popular" path="/article/popular" />
+        <Item label="✨ Featured" path="/article/slider" />
+        <Item label="✍️ Submit Article" path="/article/submit-user" />
+        <Item label="🔔 Notifications" path="/notifications" />
+        <Item label="☎️ Contact" path="/contact" />
+
+        {/* THEME TOGGLE */}
+        <TouchableOpacity style={styles.toggle} onPress={toggleTheme}>
+          <Text style={styles.text}>
+            {theme === "dark" ? "🌞 Light Mode" : "🌙 Dark Mode"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { paddingTop: 10 },
+  item: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#eee",
+    marginBottom: 12,
+  },
+  toggle: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#ddd",
+    marginTop: 20,
+  },
+  text: { fontSize: 16, fontWeight: "600" },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\notifications\index.js =====
+
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import { listNotifications } from "../../src/api/notifications";
+import { useTheme } from "../../src/theme/ThemeContext";
+import AppShell from "../../src/components/AppShell";
+
+export default function NotificationsPage() {
+  const { colors } = useTheme();
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    listNotifications().then((r) =>
+      setItems(r.data?.results || [])
+    );
+  }, []);
+
+  return (
+    <AppShell title="Notifications">
+      <FlatList
+        data={items}
+        keyExtractor={(i) => i.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.card,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            <Text
+              style={[
+                styles.title,
+                { color: colors.text },
+              ]}
+            >
+              {item.title}
+            </Text>
+            <Text style={{ color: colors.muted }}>
+              {item.message}
+            </Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 40,
+              color: colors.muted,
+            }}
+          >
+            No notifications
+          </Text>
+        }
+      />
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  title: {
+    fontWeight: "700",
+    marginBottom: 4,
+    fontSize: 15,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\payments\index.js =====
+
+// frontend/app/payments/index.js
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { startPayment } from "../../src/api/payments";
+import { showSnackbar } from "../../src/components/Snackbar";
+
+export default function Payments() {
+  const [loading, setLoading] = useState(false);
+
+  const doStart = async () => {
+    setLoading(true);
+    try {
+      const res = await startPayment();
+      showSnackbar("Payment started (check server)", "success");
+      console.log("payment start res", res.data);
+    } catch (e) {
+      console.log("payment err", e);
+      showSnackbar("Payment failed", "error");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 30, marginBottom: 12 ,paddingHorizontal: 20, paddingTop: 50 }}>Payments</Text>
+      <TouchableOpacity onPress={doStart} style={{ backgroundColor: "#1E90FF", padding: 12, borderRadius: 8 }}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Start Payment</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\payments\result.js =====
+
+// frontend/app/payments/result.js
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { checkPayment } from "../../src/api/payments";
+
+export default function PaymentResult() {
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    checkPayment(id)
+      .then(res => setStatus(res.data))
+      .catch(e => {
+        console.log("check payment", e.response?.data || e.message);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <ActivityIndicator style={{ marginTop: 20 }} />;
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 22 }}>Payment status</Text>
+      <Text style={{ marginTop: 12 }}>{JSON.stringify(status)}</Text>
+      <TouchableOpacity onPress={() => router.push("/menu")} style={{ marginTop: 20 }}>
+        <Text style={{ color: "#1E90FF" }}>Back to Menu</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\payments\start.js =====
+
+// frontend/app/payments/start.js
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
+import { startPayment } from "../../src/api/payments";
+
+export default function StartPayment() {
+  const router = useRouter();
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const onStart = async () => {
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert("Invalid amount", "Please enter a numeric amount.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const amountCents = Math.round(Number(amount) * 100);
+      const payload = { amount_cents: amountCents, description: description || `Payment of ${amount}` };
+      const res = await startPayment(payload);
+      const data = res.data || {};
+      const paymentId = data.id || data.payment_id || null;
+      const checkoutUrl = data.checkout_url || data.payment_url || data.url || null;
+
+      if (!paymentId) {
+        Alert.alert("Error", "Payment id not returned by backend.");
+        setLoading(false);
+        return;
+      }
+
+      if (checkoutUrl) {
+        Linking.openURL(checkoutUrl).catch(err => console.log("Link open error", err));
+      } else {
+        Alert.alert("Payment started", "Proceeding to payment status...");
+      }
+
+      router.push({ pathname: "/payments/status", params: { id: paymentId } });
+    } catch (e) {
+      console.log("startPayment error", e);
+      const msg = e.response?.data?.detail || e.response?.data?.error || e.message || "Could not start payment. Check backend/tunnel.";
+      Alert.alert("Payment error", String(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 24, marginBottom: 12 }}>Start Payment</Text>
+
+      <Text style={{ marginBottom: 6 }}>Amount (units)</Text>
+      <TextInput placeholder="e.g. 1.99" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 12 }} />
+
+      <Text style={{ marginBottom: 6 }}>Description (optional)</Text>
+      <TextInput placeholder="Payment for article submission" value={description} onChangeText={setDescription} style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 18 }} />
+
+      {loading ? <ActivityIndicator /> : (
+        <>
+          <TouchableOpacity onPress={onStart} style={{ backgroundColor: "#1E90FF", padding: 14, borderRadius: 8 }}>
+            <Text style={{ color: "white", textAlign: "center", fontSize: 16 }}>Start Payment</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#1E90FF", textAlign: "center" }}>Back</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\payments\status.js =====
+
+// frontend/app/payments/status.js
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { getPayment } from "../../src/api/payments";
+
+export default function PaymentStatus() {
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef(null);
+  const POLL_INTERVAL = 2000;
+
+  async function fetchStatus() {
+    try {
+      const res = await getPayment(id);
+      const data = res.data || {};
+      const s = data.status || data.payment_status || null;
+      setStatus(s);
+      if (s === "paid" || s === "completed" || s === "success") {
+        clearInterval(pollRef.current);
+        Alert.alert("Payment successful", "Thank you — payment completed.", [{ text: "OK", onPress: () => router.back() }]);
+      } else if (s === "failed" || s === "cancelled") {
+        clearInterval(pollRef.current);
+        Alert.alert("Payment failed", "Payment failed or was cancelled.");
+      }
+    } catch (e) {
+      console.log("getPayment error", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!id) {
+      Alert.alert("Missing payment id", "No payment id provided.");
+      return;
+    }
+    fetchStatus();
+    pollRef.current = setInterval(fetchStatus, POLL_INTERVAL);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [id]);
+
+  return (
+    <View style={{ padding: 20, alignItems: "center" }}>
+      <Text style={{ fontSize: 20, marginBottom: 12 }}>Payment Status</Text>
+      {loading ? <ActivityIndicator size="large" /> : (
+        <>
+          <Text style={{ marginBottom: 8 }}>Payment ID: {id}</Text>
+          <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 8 }}>Status: {status || "unknown"}</Text>
+          <TouchableOpacity onPress={() => { setLoading(true); fetchStatus(); }} style={{ backgroundColor: "#1E90FF", padding: 10, borderRadius: 8, marginTop: 8 }}>
+            <Text style={{ color: "white" }}>Refresh</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#1E90FF" }}>Back</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\profile\index.js =====
+
+// frontend/app/profile/index.js
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import client from "../../src/api/client";
+import { showSnackbar } from "../../src/components/Snackbar";
+import { useRouter } from "expo-router";
+
+export default function Profile() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await client.get("/auth/profile/");
+      setUser(res.data);
+    } catch (e) {
+      console.log("profile err", e);
+      showSnackbar("Failed to load profile", "error");
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const doLogout = async () => {
+    try {
+      await client.setAuthToken(null);
+      showSnackbar("Logged out", "success");
+      router.replace("/");
+    } catch (e) {
+      showSnackbar("Logout error", "error");
+    }
+  };
+
+  if (loading) return <View style={{ padding: 20 }}><ActivityIndicator size="large" /></View>;
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 24 }}>{user?.username || "Profile"}</Text>
+      <Text style={{ marginTop: 8 }}>{user?.email}</Text>
+      <TouchableOpacity onPress={() => router.push("/profile/settings")} style={{ marginTop: 12 }}>
+        <Text style={{ color: "#1E90FF" }}>Settings</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={doLogout} style={{ marginTop: 16, backgroundColor: "#e74c3c", padding: 10, borderRadius: 8 }}>
+        <Text style={{ color: "#fff" }}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\profile\settings.js =====
+
+// frontend/app/profile/settings.js
+import React from "react";
+import { View, Text } from "react-native";
+
+export default function Settings() {
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 24 }}>Settings</Text>
+      <Text style={{ marginTop: 12 }}>Theme and preferences will go here.</Text>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\settings\theme.js =====
+
+// frontend/app/settings/theme.js
+import React, { useContext } from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { ThemeContext } from "../../src/theme/theme";
+
+export default function ThemeSettings() {
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  return (
+    <View style={{ flex: 1, padding: 20, backgroundColor: theme.background }}>
+      <Text style={{ fontSize: 28, marginBottom: 20, color: theme.text }}>Theme Settings</Text>
+      <TouchableOpacity onPress={toggleTheme} style={{ backgroundColor: theme.primary, padding: 16, borderRadius: 10 }}>
+        <Text style={{ color: "white", fontSize: 18 }}>Switch mode</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\submit\index.js =====
+
+// frontend/app/submit/index.js
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from "react-native";
+import { useRouter } from "expo-router";
+import { submitArticle, getCategories } from "../../src/api/articles";
+import { showSnackbar } from "../../src/components/Snackbar";
+import * as ImagePicker from "expo-image-picker";
+
+export default function SubmitArticle() {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [body, setBody] = useState("");
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const pickImage = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+    if (!res.canceled) setImage(res);
+  };
+
+  const doSubmit = async () => {
+    if (!title || !body) { showSnackbar("Title and body are required", "error"); return; }
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("title", title);
+      fd.append("excerpt", excerpt);
+      fd.append("body", body);
+      if (image && image.uri) {
+        const filename = image.uri.split("/").pop();
+        const match = /\.(\w+)$/.exec(filename || "");
+        const type = match ? `image/${match[1]}` : "image";
+        fd.append("image", { uri: image.uri, name: filename, type });
+      }
+      await submitArticle(fd);
+      showSnackbar("Article submitted", "success");
+      router.replace("/");
+    } catch (e) {
+      console.log("submit err", e);
+      showSnackbar("Submission failed", "error");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <View style={{ padding: 16 }}>
+      <Text style={{ fontSize: 30, marginBottom: 12 ,paddingHorizontal: 20, paddingTop: 50}}>Submit Article</Text>
+      <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={{ borderWidth: 1, padding: 10, marginBottom: 8 }} />
+      <TextInput placeholder="Excerpt" value={excerpt} onChangeText={setExcerpt} style={{ borderWidth: 1, padding: 10, marginBottom: 8 }} />
+      <TextInput placeholder="Body" value={body} onChangeText={setBody} multiline style={{ borderWidth: 1, padding: 12, height: 180, marginBottom: 8 }} />
+      {image && <Image source={{ uri: image.uri }} style={{ width: 120, height: 80, marginBottom: 8 }} />}
+      <TouchableOpacity onPress={pickImage} style={{ backgroundColor: "#eee", padding: 10, borderRadius: 8, marginBottom: 8 }}>
+        <Text>Select Image</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={doSubmit} style={{ backgroundColor: "#1E90FF", padding: 12, borderRadius: 8, alignItems: "center" }}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Submit</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\app\theming\index.js =====
+
+import React from "react";
+import { View, Text, Switch, StyleSheet } from "react-native";
+import { useTheme } from "../../src/theme/ThemeContext";
+
+const HEADER_OFFSET = 30; // 🔧 tweak if needed
+
+export default function ThemePage() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#121212" : "#FFFFFF" },
+      ]}
+    >
+      {/* PAGE TITLE */}
+      <Text
+        style={[
+          styles.pageTitle,
+          { color: isDark ? "#FFFFFF" : "#000000" },
+        ]}
+      >
+        Theme Settings
+      </Text>
+
+      {/* CURRENT THEME */}
+      <Text
+        style={[
+          styles.label,
+          { color: isDark ? "#CCCCCC" : "#333333" },
+        ]}
+      >
+        Current theme: {theme.toUpperCase()}
+      </Text>
+
+      {/* TOGGLE */}
+      <Switch
+        value={isDark}
+        onValueChange={toggleTheme}
+        style={styles.switch}
+      />
+    </View>
+  );
+}
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginTop: HEADER_OFFSET,
+    marginBottom: 20,
+  },
+
+  label: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  switch: {
+    marginTop: 6,
+    alignSelf: "flex-start",
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\articles.js =====
+
+// frontend/src/api/articles.js
+import client, { publicClient } from "./client";
+
+/* ---------------- PUBLIC ---------------- */
+
+export const listArticles = (page = 1, pageSize = null, filters = {}) =>
+  publicClient.get("/api/articles/", {
+    params: {
+      page,
+      page_size: pageSize,
+      ...filters,
+    },
+  });
+
+export const getArticle = (id) =>
+  publicClient.get(`/api/articles/${id}/`);
+
+export const listSlider = () =>
+  publicClient.get("/api/articles/slider/");
+
+export const listPopular = () =>
+  publicClient.get("/api/articles/popular/");
+
+export const getCategories = () =>
+  client.get("/api/articles/categories/"); // 🔐 auth required
+
+/* ---------------- AUTH REQUIRED ---------------- */
+
+export const submitArticle = (formData) =>
+  client.post("/api/articles/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\auth.js =====
+
+// frontend/src/api/auth.js
+
+import Constants from "expo-constants";
+
+const API_BASE_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("API base URL not configured");
+}
+
+// 🔐 CENTRAL REQUEST HANDLER
+async function apiRequest(path, method = "GET", body = null, token = null) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null,
+  });
+
+  const text = await res.text();
+  let json = {};
+
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = { raw: text };
+  }
+
+  if (!res.ok) {
+    const err = new Error("API Error");
+    err.status = res.status;
+    err.body = json;
+    throw err;
+  }
+
+  return json;
+}
+
+/* =======================
+   ✅ AUTH ENDPOINTS
+======================= */
+
+// 🔥 FIXED — API PREFIX ADDED
+export const requestPhoneCode = (mobile_no) =>
+  apiRequest("/api/auth/request-phone-code/", "POST", { mobile_no });
+
+export const verifyPhoneCode = (session_id, code) =>
+  apiRequest("/api/auth/verify-phone-code/", "POST", { session_id, code });
+
+export const registerUser = (payload) =>
+  apiRequest("/api/auth/register/", "POST", payload);
+
+export const loginUser = (payload) =>
+  apiRequest("/api/auth/login/", "POST", payload);
+
+export const socialLogin = (provider, token) =>
+  apiRequest("/api/auth/social/", "POST", { provider, token });
+
+export const getProfile = (token) =>
+  apiRequest("/api/auth/profile/", "GET", null, token);
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\client.js =====
+
+// frontend/src/api/client.js
+import axios from "axios";
+import Constants from "expo-constants";
+import { getAccessToken } from "../utils/token";
+
+const API_BASE_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL;
+
+/**
+ * PUBLIC CLIENT
+ * - NO Authorization header
+ * - Used for articles, slider, popular, categories
+ */
+export const publicClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+});
+
+/**
+ * AUTHENTICATED CLIENT
+ * - Automatically attaches JWT token
+ * - Used for protected APIs
+ */
+const authClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+});
+
+authClient.interceptors.request.use(
+  async (config) => {
+    const token = await getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default authClient;
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\comments.js =====
+
+// frontend/src/api/comments.js
+import client from "./client";
+
+export const listComments = (articleId) =>
+  client.get("/comments/", { params: { article: articleId } });
+
+export const postComment = (data) => client.post("/comments/", data);
+
+export default { listComments, postComment };
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\contact.js =====
+
+// frontend/src/api/contact.js
+import client from "./client";
+
+export const submitContact = (data) =>
+  client.post("/contact/submit/", data);
+
+export default {
+  submitContact,
+};
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\notifications.js =====
+
+// frontend/src/api/notifications.js
+import client from "./client";
+
+export const listNotifications = () =>
+  client.get("/api/notifications/");
+
+export const markRead = (id) =>
+  client.post(`/api/notifications/${id}/read/`);
+
+export const getUnreadCount = () =>
+  client.get("/api/notifications/unread-count/");
+
+export default {
+  listNotifications,
+  markRead,
+  getUnreadCount,
+};
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\otp.js =====
+
+// frontend/src/api/otp.js
+import client from "./client";
+
+// backend endpoints (Option A)
+export const sendOTP = (payload) => client.post("/auth/request-phone-code/", payload);
+export const verifyOTP = (payload) => client.post("/auth/verify-phone-code/", payload);
+
+export default { sendOTP, verifyOTP };
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\api\payments.js =====
+
+// frontend/src/api/payments.js
+import client from "./client";
+
+export const startPayment = (payload = {}) => client.post("/payments/start/", payload);
+export const checkPayment = (id) => client.get(`/payments/${id}/status/`);
+export const getPayment = (id) => client.get(`/payments/${id}/`);
+
+export default { startPayment, checkPayment, getPayment };
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\AppShell.js =====
+
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { useTheme } from "../theme/ThemeContext";
+
+export default function AppShell({ title, children }) {
+  const router = useRouter();
+  const { colors } = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      {/* 🔷 APP NAME CARD */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => router.push("/article")}
+        style={[styles.appCard, { backgroundColor: colors.card }]}
+      >
+        <Text style={[styles.appName, { color: colors.text }]}>
+          Trilok Blog App
+        </Text>
+      </TouchableOpacity>
+
+      {/* 🔷 MENU + ACCOUNT ROW */}
+      <View style={styles.navRow}>
+        <TouchableOpacity onPress={() => router.push("/menu")}>
+          <Text style={[styles.navText, { color: colors.primary }]}>
+            ☰ Menu
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push("/auth/welcome")}>
+          <Text style={[styles.navText, { color: colors.primary }]}>
+            Account
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 🔷 PAGE TITLE */}
+      {title && (
+        <Text style={[styles.pageTitle, { color: colors.text }]}>
+          {title}
+        </Text>
+      )}
+
+      {/* 🔷 PAGE CONTENT */}
+      <View style={styles.content}>
+        {children}
+      </View>
+
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+
+  appCard: {
+    marginTop: 40,
+    marginBottom: 14,
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: "center",
+  },
+
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+  },
+
+  navRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    paddingHorizontal: 6,
+  },
+
+  navText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+
+  content: {
+    flex: 1,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\ArticleCard.js =====
+
+import React from "react";
+import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { useTheme } from "../theme/ThemeContext";
+
+export default function ArticleCard({ item, onPress }) {
+  const { colors } = useTheme();
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.card, { backgroundColor: colors.card }]}
+    >
+      {item.image && (
+        <Image source={{ uri: item.image }} style={styles.image} />
+      )}
+
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {item.title}
+        </Text>
+        <Text style={{ color: colors.muted }}>
+          {item.excerpt || item.body?.slice(0, 100) + "..."}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\CommentItem.js =====
+
+// frontend/src/components/CommentItem.js
+import React from "react";
+import { View, Text } from "react-native";
+
+export default function CommentItem({ comment }) {
+  const author = comment.user_name || comment.guest_name || "Anonymous";
+  const initials = (author || "A").split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <View style={{ flexDirection: "row", marginVertical: 8 }}>
+      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#ddd", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+        <Text style={{ fontWeight: "700" }}>{initials}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <Text style={{ fontWeight: "700" }}>{author}</Text>
+          <Text style={{ color: "#888", fontSize: 12 }}>{new Date(comment.created_at).toLocaleString?.() || comment.created_at}</Text>
+        </View>
+        <Text style={{ marginTop: 6 }}>{comment.content}</Text>
+      </View>
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\ErrorBoundary.js =====
+
+// frontend/src/components/ErrorBoundary.js
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ error, info });
+    console.error("Captured error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 8 }}>Something went wrong</Text>
+          <Text>{this.state.error?.toString?.()}</Text>
+          <TouchableOpacity onPress={() => this.setState({ hasError: false, error: null, info: null })} style={{ marginTop: 12 }}>
+            <Text style={{ color: "#1E90FF" }}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\FallbackImage.js =====
+
+// frontend/src/components/FallbackImage.js
+import React, { useState, useRef } from "react";
+import { Animated, Image, View } from "react-native";
+
+export default function FallbackImage({ uri, style, placeholderColor = "#eee", resizeMode = "cover" }) {
+  const [failed, setFailed] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const onLoad = () => Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+
+  if (!uri || failed) return <View style={[{ backgroundColor: placeholderColor }, style]} />;
+
+  return (
+    <Animated.View style={[{ opacity }, style]}>
+      <Image source={{ uri }} style={[{ width: "100%", height: "100%" }, style]} onLoad={onLoad} onError={() => setFailed(true)} resizeMode={resizeMode} />
+    </Animated.View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\ImageModal.js =====
+
+// frontend/src/components/ImageModal.js
+import React from "react";
+import { Modal, View, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+
+export default function ImageModal({ visible, images = [], index = 0, onClose = () => {} }) {
+  if (!visible) return null;
+  const uri = images[index] || images[0] || null;
+  const { width } = Dimensions.get("window");
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.wrapper}>
+        <TouchableOpacity style={styles.backdrop} onPress={onClose} />
+        <View style={styles.content}>
+          {uri ? <Image source={{ uri }} style={{ width: width - 40, height: (width - 40) * 0.6, borderRadius: 8 }} resizeMode="contain" /> : null}
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose}><View style={{ padding: 8 }} /></TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrapper: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
+  backdrop: { ...StyleSheet.absoluteFillObject },
+  content: { alignItems: "center" },
+  closeBtn: { marginTop: 12 },
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\SkeletonArticle.js =====
+
+// frontend/src/components/SkeletonArticle.js
+import React from "react";
+import { View } from "react-native";
+
+export default function SkeletonArticle({ style }) {
+  return (
+    <View style={[{ padding: 14, backgroundColor: "#f6f7fb", borderRadius: 10, marginBottom: 12 }, style]}>
+      <View style={{ height: 18, width: "60%", backgroundColor: "#e8eaf0", borderRadius: 6, marginBottom: 8 }} />
+      <View style={{ height: 12, width: "40%", backgroundColor: "#e8eaf0", borderRadius: 6, marginBottom: 10 }} />
+      <View style={{ height: 10, width: "90%", backgroundColor: "#e8eaf0", borderRadius: 6 }} />
+    </View>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\components\Snackbar.js =====
+
+// frontend/src/components/Snackbar.js
+import React from "react";
+import { View, Text, Animated, StyleSheet } from "react-native";
+
+let currentToast = null;
+
+export const showSnackbar = (message, type = "info", duration = 3500) => {
+  if (currentToast) currentToast.show(message, type, duration);
+};
+
+export default class Snackbar extends React.PureComponent {
+  state = { visible: false, message: "", type: "info" };
+  anim = new Animated.Value(0);
+
+  componentDidMount() { currentToast = this; }
+  componentWillUnmount() { if (currentToast === this) currentToast = null; }
+
+  show = (message, type = "info", duration = 3500) => {
+    this.setState({ visible: true, message, type }, () => {
+      Animated.timing(this.anim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      setTimeout(this.hide, duration);
+    });
+  };
+
+  hide = () => {
+    Animated.timing(this.anim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      this.setState({ visible: false, message: "" });
+    });
+  };
+
+  render() {
+    const { visible, message, type } = this.state;
+    const bg = type === "error" ? "#e74c3c" : type === "success" ? "#2ecc71" : "#333";
+    if (!visible) return null;
+
+    return (
+      <Animated.View style={[styles.container, { transform: [{ translateY: this.anim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }] }]}>
+        <View style={[styles.snack, { backgroundColor: bg }]}>
+          <Text style={styles.text}>{message}</Text>
+        </View>
+      </Animated.View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: { position: "absolute", bottom: 80, left: 20, right: 20, zIndex: 9999, alignItems: "center" },
+  snack: { padding: 12, borderRadius: 8, maxWidth: "100%" },
+  text: { color: "#fff" }
+});
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\context\AuthContext.js =====
+
+// frontend/src/context/AuthContext.js
+import React, { createContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import client from "../api/client";
+
+export const AuthContext = createContext();
+
+export default function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const saved = await AsyncStorage.getItem("user");
+      if (saved) setUser(JSON.parse(saved));
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const loginUser = async (userData, access, refresh) => {
+    await AsyncStorage.setItem("access_token", access);
+    if (refresh) await AsyncStorage.setItem("refresh_token", refresh);
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
+    client.defaults.headers.Authorization = `Bearer ${access}`;
+    setUser(userData);
+  };
+
+  const logoutUser = async () => {
+    await AsyncStorage.removeItem("access_token");
+    await AsyncStorage.removeItem("refresh_token");
+    await AsyncStorage.removeItem("user");
+    delete client.defaults.headers.Authorization;
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, loginUser, logoutUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\context\ThemeContext.js =====
+
+// frontend/src/context/ThemeContext.js
+import React, { createContext, useEffect, useState } from "react";
+import client from "../api/client";
+
+export const ThemeContext = createContext();
+
+export function ThemeProvider({ children }) {
+  const [activeTheme, setActiveTheme] = useState("default");
+  const [themeData, setThemeData] = useState({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await client.get("/api/theming/setting/");
+        if (res.data) {
+          setActiveTheme(res.data.active_theme || "default");
+          setThemeData(res.data.theme_data || {});
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const changeTheme = async (name) => {
+    try {
+      const res = await client.post("/api/theming/setting/change/", { active_theme: name });
+      if (res.data) {
+        setActiveTheme(res.data.active_theme);
+        setThemeData(res.data.theme_data || {});
+      }
+    } catch {}
+  };
+
+  return (
+    <ThemeContext.Provider value={{ activeTheme, themeData, changeTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\hooks\useAuth.js =====
+
+// frontend/src/hooks/useAuth.js
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+
+export default function useAuth() {
+  return useContext(AuthContext);
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\store\authStore.js =====
+
+// frontend/src/store/authStore.js
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+
+export async function saveAuth(user, access, refresh) {
+  await AsyncStorage.setItem("user", JSON.stringify(user));
+  await AsyncStorage.setItem("access_token", access);
+  if (refresh) await AsyncStorage.setItem("refresh_token", refresh);
+}
+
+export async function clearAuth() {
+  await AsyncStorage.removeItem("user");
+  await AsyncStorage.removeItem("access_token");
+  await AsyncStorage.removeItem("refresh_token");
+}
+
+export async function getAuth() {
+  const user = await AsyncStorage.getItem("user");
+  const access = await AsyncStorage.getItem("access_token");
+  const refresh = await AsyncStorage.getItem("refresh_token");
+  return { user: user ? JSON.parse(user) : null, access, refresh };
+}
+
+export function useAuthStore() {
+  return useContext(AuthContext);
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\theme\theme.js =====
+
+// frontend/src/theme/theme.js
+import React, { createContext } from "react";
+
+export const theme = {
+  background: "#ffffff",
+  card: "#f7f8fa",
+  text: "#111827",
+  muted: "#6b7280",
+  primary: "#1e90ff",
+  danger: "#ef4444",
+};
+
+export const ThemeContext = createContext({ theme });
+export const ThemeProvider = ({ children }) => (
+  <ThemeContext.Provider value={{ theme }}>{children}</ThemeContext.Provider>
+);
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\theme\ThemeContext.js =====
+
+// frontend/src/theme/ThemeContext.js
+
+import React, { createContext, useContext, useState, useMemo } from "react";
+import { Appearance } from "react-native";
+
+const ThemeContext = createContext(null);
+
+export function ThemeProvider({ children }) {
+  const systemTheme = Appearance.getColorScheme();
+  const [theme, setTheme] = useState(systemTheme || "light");
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const colors = useMemo(() => {
+    const isDark = theme === "dark";
+
+    return {
+      background: isDark ? "#121212" : "#F8F9FA",
+      card: isDark ? "#1E1E1E" : "#FFFFFF",
+      text: isDark ? "#FFFFFF" : "#000000",
+      muted: isDark ? "#B0B0B0" : "#6C757D",
+      border: isDark ? "#2A2A2A" : "#DEE2E6",
+      inputBg: isDark ? "#1E1E1E" : "#FFFFFF",
+
+      primary: "#1E90FF",
+      danger: "#DC3545",
+      success: "#28A745",
+    };
+  }, [theme]);
+
+  return (
+    <ThemeContext.Provider value={{ theme, colors, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) {
+    throw new Error("useTheme must be used inside ThemeProvider");
+  }
+  return ctx;
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\utils\storage.js =====
+
+// frontend/src/utils/storage.js
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+export const setItem = async (k, v) => {
+  try {
+    await AsyncStorage.setItem(k, v);
+  } catch (e) {
+    console.log("storage set err", e);
+  }
+};
+
+export const getItem = async (k) => {
+  try {
+    return await AsyncStorage.getItem(k);
+  } catch (e) {
+    return null;
+  }
+};
+
+export const removeItem = async (k) => {
+  try {
+    await AsyncStorage.removeItem(k);
+  } catch (e) {
+    console.log("storage remove err", e);
+  }
+};
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\utils\toast.js =====
+
+// frontend/src/utils/toast.js
+import { Platform, ToastAndroid, Alert } from "react-native";
+
+export function showToast(title, message = null) {
+  if (Platform.OS === "android") {
+    ToastAndroid.show(title + (message ? ": " + message : ""), ToastAndroid.SHORT);
+  } else {
+    Alert.alert(title, message || undefined);
+  }
+}
+
+===== FILE: C:\Users\world\OneDrive\Desktop\blog_website\frontend\src\utils\token.js =====
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const ACCESS_KEY = "access_token";
+const REFRESH_KEY = "refresh_token";
+
+/* -----------------------------
+   SAVE TOKENS
+-------------------------------- */
+export async function saveTokens({ access, refresh }) {
+  if (access) await AsyncStorage.setItem(ACCESS_KEY, access);
+  if (refresh) await AsyncStorage.setItem(REFRESH_KEY, refresh);
+}
+
+/* -----------------------------
+   READ TOKENS
+-------------------------------- */
+export async function getAccessToken() {
+  return AsyncStorage.getItem(ACCESS_KEY);
+}
+
+export async function getRefreshToken() {
+  return AsyncStorage.getItem(REFRESH_KEY);
+}
+
+/* -----------------------------
+   LOGOUT (SINGLE SOURCE)
+-------------------------------- */
+export async function logoutUser() {
+  await AsyncStorage.removeItem(ACCESS_KEY);
+  await AsyncStorage.removeItem(REFRESH_KEY);
+}
+
+===== FILE: app.json =====
+
+{
+  "expo": {
+    "name": "BlogApp",
+    "slug": "blogapp",
+    "scheme": "blogapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+
+    "icon": "./assets/icon.png",
+
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ],
+
+    "android": {
+      "package": "com.blogapp"
+    },
+
+    "ios": {
+      "bundleIdentifier": "com.blogapp.ios"
+    },
+
+    "experiments": {
+      "typedRoutes": true
+    },
+
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "https://capable-parents-reviewing-chorus.trycloudflare.com",
+      "EXPO_PUBLIC_FACEBOOK_APP_ID": "1881890119383543"
+    }
+  }
+}
+
+===== FILE: babel.config.js =====
+
+module.exports = {
+  presets: ['babel-preset-expo'],
+  plugins: ['react-native-reanimated/plugin'],
+};
+
+===== FILE: package.json =====
+
+{
+  "name": "frontend",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "expo start --tunnel",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-navigation/native": "^7.1.24",
+    "@react-navigation/native-stack": "^7.8.5",
+    "axios": "^1.3.2",
+    "expo": "~54.0.31",
+    "expo-auth-session": "~7.0.10",
+    "expo-constants": "~18.0.13",
+    "expo-facebook": "^12.2.0",
+    "expo-image-picker": "~17.0.10",
+    "expo-linking": "~8.0.11",
+    "expo-modules-core": "~3.0.29",
+    "expo-router": "~6.0.21",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "expo-web-browser": "~15.0.10",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-image-zoom-viewer": "^3.0.1",
+    "react-native-modal": "^14.0.0-rc.1",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-worklets": "^0.5.1",
+    "undefined": "\\"
+  },
+  "private": true
+}

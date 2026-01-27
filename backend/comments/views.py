@@ -5,29 +5,29 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from django.utils import timezone
-
 from .models import Comment
 from .serializers import CommentSerializer
-from accounts.models import PhoneVerification
-from articles.models import Article
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """
     Public comment endpoints:
-    - GET list (approved only)
-    - POST create (guest or signed-in user)
-    - GET retrieve
-    Update/delete => admin only (handled elsewhere)
+    - GET list (approved only) → public
+    - GET retrieve → public
+    - POST create → authenticated users only
     """
 
     queryset = Comment.objects.select_related("article", "user")
     serializer_class = CommentSerializer
 
-    # ✅ PUBLIC READ, AUTH WRITE
+    # 🔑 CRITICAL: allow request to reach get_permissions()
+    permission_classes = [AllowAny]
+
+    # --------------------------------------
+    # PER-ACTION PERMISSIONS
+    # --------------------------------------
     def get_permissions(self):
-        if self.action in ["list", "retrieve"]:
+        if self.action in ["list", "retrieve", "by_article"]:
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -44,14 +44,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         qs = Comment.objects.filter(approved=True)
 
         if article_param:
-            # ✅ SAFE: detect numeric ID vs slug
             if str(article_param).isdigit():
                 qs = qs.filter(article_id=int(article_param))
             else:
                 qs = qs.filter(article__slug=article_param)
 
         qs = qs.order_by("-created_at")
-
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
@@ -59,26 +57,21 @@ class CommentViewSet(viewsets.ModelViewSet):
     # CREATE COMMENT (AUTH ONLY)
     # --------------------------------------
     def perform_create(self, serializer):
-        user = self.request.user if self.request.user.is_authenticated else None
+        user = self.request.user
 
-        if user:
-            is_auto_approved = getattr(user, "is_admin", False)
-            serializer.save(user=user, approved=is_auto_approved)
-            return
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError(
+                {"detail": "Login required to post a comment"}
+            )
 
-        # ❌ Guests cannot post comments anymore
-        raise serializers.ValidationError(
-            {"detail": "Login required to post a comment"}
-        )
+        is_auto_approved = getattr(user, "is_admin", False)
+        serializer.save(user=user, approved=is_auto_approved)
 
     # --------------------------------------
-    # OPTIONAL: helper endpoint
+    # OPTIONAL: BY ARTICLE SLUG
     # --------------------------------------
     @action(detail=False, methods=["get"], url_path="by-article")
     def by_article(self, request):
-        """
-        GET /api/comments/by-article/?slug=xxx
-        """
         slug = request.query_params.get("slug")
         if not slug:
             return Response({"detail": "slug required"}, status=400)
@@ -88,5 +81,5 @@ class CommentViewSet(viewsets.ModelViewSet):
             approved=True
         ).order_by("-created_at")
 
-        serializer = CommentSerializer(comments, many=True)
+        serializer = self.get_serializer(comments, many=True)
         return Response(serializer.data)
