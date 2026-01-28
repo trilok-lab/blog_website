@@ -32,7 +32,7 @@
     },
 
     "extra": {
-      "EXPO_PUBLIC_API_URL": "https://referring-shipping-silent-yet.trycloudflare.com",
+      "EXPO_PUBLIC_API_URL": "https://properties-gras-buyer-trustee.trycloudflare.com",
       "EXPO_PUBLIC_FACEBOOK_APP_ID": "1881890119383543"
     }
   }
