@@ -1,15 +1,45 @@
-import React from "react";
+// frontend/src/components/AppShell.js
+
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "../theme/ThemeContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AppShell({ title, children }) {
   const router = useRouter();
   const { colors } = useTheme();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 🔑 check auth state from storage
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem("access_token");
+      if (mounted) {
+        setIsLoggedIn(!!token);
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const onAccountPress = () => {
+    if (isLoggedIn) {
+      router.push("/profile");
+    } else {
+      router.push("/auth/welcome");
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-
       {/* 🔷 APP NAME CARD */}
       <TouchableOpacity
         activeOpacity={0.9}
@@ -21,7 +51,7 @@ export default function AppShell({ title, children }) {
         </Text>
       </TouchableOpacity>
 
-      {/* 🔷 MENU + ACCOUNT ROW */}
+      {/* 🔷 MENU + ACCOUNT / PROFILE ROW */}
       <View style={styles.navRow}>
         <TouchableOpacity onPress={() => router.push("/menu")}>
           <Text style={[styles.navText, { color: colors.primary }]}>
@@ -29,9 +59,9 @@ export default function AppShell({ title, children }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/auth/welcome")}>
+        <TouchableOpacity onPress={onAccountPress}>
           <Text style={[styles.navText, { color: colors.primary }]}>
-            Account
+            {isLoggedIn ? "Profile" : "Account"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -44,10 +74,7 @@ export default function AppShell({ title, children }) {
       )}
 
       {/* 🔷 PAGE CONTENT */}
-      <View style={styles.content}>
-        {children}
-      </View>
-
+      <View style={styles.content}>{children}</View>
     </View>
   );
 }

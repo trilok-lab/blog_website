@@ -1,50 +1,77 @@
 // frontend/app/profile/index.js
+
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import client from "../../src/api/client";
-import { showSnackbar } from "../../src/components/Snackbar";
 import { useRouter } from "expo-router";
+import AppShell from "../../src/components/AppShell";
+import { getAuth, clearAuth } from "../../src/store/authStore";
+import { showSnackbar } from "../../src/components/Snackbar";
 
 export default function Profile() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
-  const load = async () => {
-    setLoading(true);
+  useEffect(() => {
+    const loadUser = async () => {
+      const { user } = await getAuth();
+      setUser(user);
+      setLoading(false);
+    };
+
+    loadUser();
+  }, []);
+
+  const logout = async () => {
     try {
-      const res = await client.get("/auth/profile/");
-      setUser(res.data);
-    } catch (e) {
-      console.log("profile err", e);
-      showSnackbar("Failed to load profile", "error");
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const doLogout = async () => {
-    try {
-      await client.setAuthToken(null);
+      await clearAuth();
       showSnackbar("Logged out", "success");
-      router.replace("/");
+      router.replace("/article");
     } catch (e) {
       showSnackbar("Logout error", "error");
     }
   };
 
-  if (loading) return <View style={{ padding: 20 }}><ActivityIndicator size="large" /></View>;
+  if (loading) {
+    return (
+      <AppShell title="Profile">
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      </AppShell>
+    );
+  }
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 24 }}>{user?.username || "Profile"}</Text>
-      <Text style={{ marginTop: 8 }}>{user?.email}</Text>
-      <TouchableOpacity onPress={() => router.push("/profile/settings")} style={{ marginTop: 12 }}>
-        <Text style={{ color: "#1E90FF" }}>Settings</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={doLogout} style={{ marginTop: 16, backgroundColor: "#e74c3c", padding: 10, borderRadius: 8 }}>
-        <Text style={{ color: "#fff" }}>Logout</Text>
-      </TouchableOpacity>
-    </View>
+    <AppShell title="Profile">
+      <View style={{ padding: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: "700" }}>
+          {user?.username || "User"}
+        </Text>
+
+        <Text style={{ marginTop: 8, fontSize: 16 }}>
+          {user?.email || ""}
+        </Text>
+
+        <TouchableOpacity
+          onPress={logout}
+          style={{
+            marginTop: 30,
+            backgroundColor: "#e74c3c",
+            padding: 14,
+            borderRadius: 10,
+          }}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              textAlign: "center",
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            Logout
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </AppShell>
   );
 }
