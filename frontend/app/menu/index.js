@@ -3,16 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppShell from "../../src/components/AppShell";
 import { useTheme } from "../../src/theme/ThemeContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logout } from "../../src/auth/logout";
 
 export default function Menu() {
-  const r = useRouter();
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [loggedIn, setLoggedIn] = useState(false);
 
-  // check login status
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem("access_token");
@@ -21,22 +21,8 @@ export default function Menu() {
     checkAuth();
   }, []);
 
-  const handleAuthToggle = async () => {
-    if (!loggedIn) {
-      // LOGIN → go to welcome page
-      r.push("/auth/welcome");
-    } else {
-      // LOGOUT → clear auth + go to articles
-      await AsyncStorage.removeItem("access_token");
-      await AsyncStorage.removeItem("refresh_token");
-      await AsyncStorage.removeItem("user");
-      setLoggedIn(false);
-      r.replace("/article");
-    }
-  };
-
   const Item = ({ label, path }) => (
-    <TouchableOpacity style={styles.item} onPress={() => r.push(path)}>
+    <TouchableOpacity style={styles.item} onPress={() => router.push(path)}>
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );
@@ -51,7 +37,6 @@ export default function Menu() {
         <Item label="🔔 Notifications" path="/notifications" />
         <Item label="☎️ Contact" path="/contact" />
 
-
         {/* THEME TOGGLE */}
         <TouchableOpacity style={styles.toggle} onPress={toggleTheme}>
           <Text style={styles.text}>
@@ -60,12 +45,21 @@ export default function Menu() {
         </TouchableOpacity>
 
         {/* LOGIN / LOGOUT TOGGLE */}
-        <TouchableOpacity style={styles.toggle} onPress={handleAuthToggle}>
-          <Text style={styles.text}>
-            {loggedIn ? "🚪 Logout" : "🔐 Login"}
-          </Text>
-        </TouchableOpacity>
-
+        {loggedIn ? (
+          <TouchableOpacity
+            style={styles.toggle}
+            onPress={() => logout(router)}
+          >
+            <Text style={styles.text}>🚪 Logout</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.toggle}
+            onPress={() => router.push("/auth/welcome")}
+          >
+            <Text style={styles.text}>🔐 Login</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </AppShell>
   );
@@ -83,7 +77,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     backgroundColor: "#ddd",
-    marginTop: 20,
+    marginTop: 16,
   },
-  text: { fontSize: 16, fontWeight: "600" },
+  text: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

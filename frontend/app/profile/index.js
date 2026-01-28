@@ -1,11 +1,17 @@
 // frontend/app/profile/index.js
 
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
 import AppShell from "../../src/components/AppShell";
 import client from "../../src/api/client";
-import { clearTokens } from "../../src/utils/token";
+import { logout } from "../../src/auth/logout";
 import { showSnackbar } from "../../src/components/Snackbar";
 
 export default function Profile() {
@@ -28,18 +34,6 @@ export default function Profile() {
   useEffect(() => {
     loadProfile();
   }, []);
-
-  const logout = async () => {
-    try {
-      await clearTokens();
-      client.setAuthToken(null);
-      showSnackbar("Logged out successfully", "success");
-      router.replace("/article");
-    } catch (e) {
-      console.log("Logout error:", e);
-      showSnackbar("Logout failed", "error");
-    }
-  };
 
   if (loading) {
     return (
@@ -82,7 +76,10 @@ export default function Profile() {
           {user.is_admin ? "Admin" : "User"}
         </Text>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => logout(router)}
+        >
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
