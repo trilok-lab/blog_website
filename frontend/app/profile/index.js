@@ -9,29 +9,33 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
+
 import AppShell from "../../src/components/AppShell";
 import client from "../../src/api/client";
 import { logout } from "../../src/auth/logout";
 import { showSnackbar } from "../../src/components/Snackbar";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 export default function Profile() {
   const router = useRouter();
+  const { colors } = useTheme();
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async () => {
-    try {
-      const res = await client.get("/api/auth/profile/");
-      setUser(res.data);
-    } catch (err) {
-      console.log("Profile load error:", err);
-      showSnackbar("Failed to load profile", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await client.get("/api/auth/profile/");
+        setUser(res.data);
+      } catch (err) {
+        console.log("Profile load error:", err);
+        showSnackbar("Failed to load profile", "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadProfile();
   }, []);
 
@@ -39,7 +43,7 @@ export default function Profile() {
     return (
       <AppShell title="Profile">
         <View style={{ padding: 20 }}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </AppShell>
     );
@@ -49,7 +53,9 @@ export default function Profile() {
     return (
       <AppShell title="Profile">
         <View style={{ padding: 20 }}>
-          <Text>Unable to load profile.</Text>
+          <Text style={{ color: colors.text }}>
+            Unable to load profile.
+          </Text>
         </View>
       </AppShell>
     );
@@ -58,26 +64,31 @@ export default function Profile() {
   return (
     <AppShell title="Profile">
       <View style={styles.container}>
-        <Text style={styles.label}>Username:</Text>
-        <Text style={styles.value}>{user.username}</Text>
+        <Text style={[styles.label, { color: colors.muted }]}>Username</Text>
+        <Text style={[styles.value, { color: colors.text }]}>
+          {user.username}
+        </Text>
 
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>
+        <Text style={[styles.label, { color: colors.muted }]}>Email</Text>
+        <Text style={[styles.value, { color: colors.text }]}>
           {user.email || "Not provided"}
         </Text>
 
-        <Text style={styles.label}>Mobile:</Text>
-        <Text style={styles.value}>
+        <Text style={[styles.label, { color: colors.muted }]}>Mobile</Text>
+        <Text style={[styles.value, { color: colors.text }]}>
           {user.mobile_no || "Not provided"}
         </Text>
 
-        <Text style={styles.label}>Role:</Text>
-        <Text style={styles.value}>
+        <Text style={[styles.label, { color: colors.muted }]}>Role</Text>
+        <Text style={[styles.value, { color: colors.text }]}>
           {user.is_admin ? "Admin" : "User"}
         </Text>
 
         <TouchableOpacity
-          style={styles.logoutBtn}
+          style={[
+            styles.logoutBtn,
+            { backgroundColor: colors.danger },
+          ]}
           onPress={() => logout(router)}
         >
           <Text style={styles.logoutText}>Logout</Text>
@@ -92,7 +103,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   label: {
-    marginTop: 12,
+    marginTop: 14,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -101,10 +112,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   logoutBtn: {
-    marginTop: 30,
-    backgroundColor: "#e74c3c",
+    marginTop: 32,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: "center",
   },
   logoutText: {
