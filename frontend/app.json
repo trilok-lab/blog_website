@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "BlogApp",
+    "slug": "blogapp",
+    "scheme": "blogapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+
+    "icon": "./assets/icon.png",
+
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ],
+
+    "android": {
+      "package": "com.blogapp"
+    },
+
+    "ios": {
+      "bundleIdentifier": "com.blogapp.ios"
+    },
+
+    "experiments": {
+      "typedRoutes": true
+    },
+
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "https://aaa-dogs-twiki-text.trycloudflare.com",
+      "EXPO_PUBLIC_FACEBOOK_APP_ID": "1881890119383543"
+    }
+  }
+}
