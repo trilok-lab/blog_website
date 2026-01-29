@@ -1,4 +1,6 @@
-﻿import React, { useState } from "react";
+﻿// frontend/app/contact/index.js
+
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -15,7 +17,7 @@ import { useTheme } from "../../src/theme/ThemeContext";
 import AppShell from "../../src/components/AppShell";
 
 export default function Contact() {
-  const r = useRouter();
+  const router = useRouter();
   const { colors } = useTheme();
 
   const [name, setName] = useState("");
@@ -25,18 +27,24 @@ export default function Contact() {
   const [loading, setLoading] = useState(false);
 
   const send = async () => {
+    if (!name || !email || !subject || !message) {
+      showSnackbar("All fields are required", "error");
+      return;
+    }
+
     setLoading(true);
     try {
-      await client.post("/contact/submit/", {
+      await client.post("/api/contact/submit/", {
         name,
         email,
         subject,
         message,
       });
+
       showSnackbar("Message sent — we'll reply soon", "success");
-      setTimeout(() => r.back(), 900);
-    } catch {
-      showSnackbar("Network error", "error");
+      setTimeout(() => router.back(), 900);
+    } catch (err) {
+      showSnackbar("Failed to send message", "error");
     } finally {
       setLoading(false);
     }
@@ -51,19 +59,31 @@ export default function Contact() {
   return (
     <AppShell title="Contact Us">
       <View style={styles.form}>
-        {[["Name", name, setName],
-          ["Email", email, setEmail],
-          ["Subject", subject, setSubject],
-        ].map(([p, v, s], i) => (
-          <TextInput
-            key={i}
-            placeholder={p}
-            placeholderTextColor={colors.muted}
-            value={v}
-            onChangeText={s}
-            style={[styles.input, themedInput]}
-          />
-        ))}
+        <TextInput
+          placeholder="Name"
+          placeholderTextColor={colors.muted}
+          value={name}
+          onChangeText={setName}
+          style={[styles.input, themedInput]}
+        />
+
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor={colors.muted}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          style={[styles.input, themedInput]}
+        />
+
+        <TextInput
+          placeholder="Subject"
+          placeholderTextColor={colors.muted}
+          value={subject}
+          onChangeText={setSubject}
+          style={[styles.input, themedInput]}
+        />
 
         <TextInput
           placeholder="Message"
