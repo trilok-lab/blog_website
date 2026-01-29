@@ -1,18 +1,60 @@
-# Node modules
+# =============================================================================
+# Node / React / Expo
+# =============================================================================
 node_modules/
-
-# Python virtual environment
-venv/
-
-# Expo/React Native caches
 .expo/
+.expo-shared/
 dist/
+web-build/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # =============================================================================
-# General
+# Python / Django
 # =============================================================================
-# OS-generated files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Django runtime files
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# =============================================================================
+# Environment & Secrets
+# =============================================================================
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# Generated / Exported Code Dumps (DO NOT COMMIT)
+# =============================================================================
+frontend-code-*.txt
+backend-code-*.txt
+
+frontend/frontend-code-*.txt
+backend/backend-code-*.txt
+
+blog_website/frontend-code-*.txt
+blog_website/backend-code-*.txt
+
+# Legacy / temporary folders
+extra/
+old code txt files/
+
+# =============================================================================
+# OS Generated Files
+# =============================================================================
 .DS_Store
 .DS_Store?
 ._*
@@ -22,47 +64,11 @@ ehthumbs.db
 Thumbs.db
 
 # =============================================================================
-# IDEs and Editors
-# =================================com=============================================
+# IDEs & Editors
+# =============================================================================
 .idea/
 .vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-
-# =============================================================================
-# Environment & Secrets
-# =============================================================================
-.env
-.env.*
-!/.env.example
-
-# =============================================================================
-# Python / Django
-# =============================================================================
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.pyc
-*.py[cod]
-*$py.class
-
-# Virtual Environments
-.venv/
-venv/
-env/
-
-# Django specific
-*.sqlite3
-db.sqlite3
-media/
-staticfiles/
-
-extra/
-
-# Ignore old exported code text files
-old code txt files/
-
-
-backend/backend-code-*.txt
-frontend/frontend-code-*.txt
