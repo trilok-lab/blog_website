@@ -1,5 +1,4 @@
 ﻿// frontend/app/menu/index.js
-
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -34,17 +33,19 @@ export default function Menu() {
         <Item label="🔥 Popular" path="/article/popular" />
         <Item label="✨ Featured" path="/article/slider" />
         <Item label="✍️ Submit Article" path="/article/submit-user" />
-        <Item label="🔔 Notifications" path="/notifications" />
+
+        {loggedIn && (
+          <Item label="🔔 Notifications" path="/notifications" />
+        )}
+
         <Item label="☎️ Contact" path="/contact" />
 
-        {/* THEME TOGGLE */}
         <TouchableOpacity style={styles.toggle} onPress={toggleTheme}>
           <Text style={styles.text}>
             {theme === "dark" ? "🌞 Light Mode" : "🌙 Dark Mode"}
           </Text>
         </TouchableOpacity>
 
-        {/* LOGIN / LOGOUT TOGGLE */}
         {loggedIn ? (
           <TouchableOpacity
             style={styles.toggle}

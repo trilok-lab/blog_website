@@ -61,7 +61,7 @@ export default function AppShell({ title, children }) {
 
         <TouchableOpacity onPress={onAccountPress}>
           <Text style={[styles.navText, { color: colors.primary }]}>
-            {isLoggedIn ? "Profile" : "Account"}
+            {isLoggedIn ? "Profile" : "LOGIN"}
           </Text>
         </TouchableOpacity>
       </View>

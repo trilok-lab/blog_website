@@ -12,7 +12,7 @@ export default function Welcome() {
   const login = async () => {
     const res = await loginUser({ username: u, password: p });
     await saveTokens(res);
-    r.replace("/menu");
+    r.replace("/article");
   };
 
   return (
