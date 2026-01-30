@@ -1,4 +1,6 @@
-﻿import React, { useEffect, useRef, useState } from "react";
+﻿// frontend/app/article/index.js
+
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +10,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -15,13 +18,10 @@ import { listArticles } from "../../src/api/articles";
 import client from "../../src/api/client";
 import { useTheme } from "../../src/theme/ThemeContext";
 import AppShell from "../../src/components/AppShell";
-
-/* ---------------- IMAGE RESOLVER ---------------- */
+import ArticleSlider from "../../src/components/ArticleSlider";
 
 const resolveImageUrl = (img) =>
   img?.startsWith("http") ? img : `${client.defaults.baseURL}${img}`;
-
-/* ---------------- COMPONENT ---------------- */
 
 export default function ArticleList() {
   const router = useRouter();
@@ -30,9 +30,8 @@ export default function ArticleList() {
   const [articles, setArticles] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const debounce = useRef(null);
-
-  /* ---------------- LOAD ARTICLES ---------------- */
 
   const load = async (q = "") => {
     setLoading(true);
@@ -44,14 +43,20 @@ export default function ArticleList() {
     }
   };
 
-  useEffect(() => load(), []);
+  const refresh = async () => {
+    setRefreshing(true);
+    await load(search);
+    setRefreshing(false);
+  };
 
-  useEffect(() => {
+  React.useEffect(() => {
+    load();
+  }, []);
+
+  React.useEffect(() => {
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => load(search), 400);
   }, [search]);
-
-  /* ---------------- RENDER CARD ---------------- */
 
   const renderItem = ({ item }) => {
     const excerpt =
@@ -76,7 +81,6 @@ export default function ArticleList() {
             {item.title}
           </Text>
 
-          {/* 🔷 CATEGORIES (same style as Popular) */}
           {item.categories?.length > 0 && (
             <View style={styles.categoryRow}>
               {item.categories.map((c) => (
@@ -98,8 +102,6 @@ export default function ArticleList() {
     );
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
     <AppShell title="Articles">
       <TextInput
@@ -117,6 +119,10 @@ export default function ArticleList() {
         ]}
       />
 
+      <ArticleSlider
+        onPress={(item) => router.push(`/article/${item.id}`)}
+      />
+
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
@@ -125,13 +131,17 @@ export default function ArticleList() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+            />
+          }
         />
       )}
     </AppShell>
   );
 }
-
-/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   search: {
@@ -140,42 +150,35 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-
   card: {
     flexDirection: "row",
     borderRadius: 14,
     marginBottom: 14,
     overflow: "hidden",
   },
-
   image: {
     width: 90,
-    height: "100%",
+    height: "90%",
   },
-
   content: {
     flex: 1,
     padding: 12,
   },
-
   title: {
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 4,
   },
-
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 6,
   },
-
   category: {
     fontSize: 12,
     marginRight: 8,
     fontWeight: "600",
   },
-
   excerpt: {
     fontSize: 14,
     lineHeight: 20,
