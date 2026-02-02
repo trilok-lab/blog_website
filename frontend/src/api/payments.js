@@ -1,8 +1,21 @@
 // frontend/src/api/payments.js
 import client from "./client";
 
-export const startPayment = (payload = {}) => client.post("/payments/start/", payload);
-export const checkPayment = (id) => client.get(`/payments/${id}/status/`);
-export const getPayment = (id) => client.get(`/payments/${id}/`);
+/**
+ * Create Stripe checkout session
+ * Backend: POST /api/payments/checkout-session/
+ */
+export const startPayment = (payload = {}) =>
+  client.post("/api/payments/checkout-session/", payload);
 
-export default { startPayment, checkPayment, getPayment };
+/**
+ * Get all payments for logged-in user
+ * Backend: GET /api/payments/my-payments/
+ */
+export const getMyPayments = () =>
+  client.get("/api/payments/my-payments/");
+
+export default {
+  startPayment,
+  getMyPayments,
+};

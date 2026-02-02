@@ -51,7 +51,7 @@ DATABASES = {
 # --------------------------------------------------
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
-PAYMENT_AMOUNT_CENTS = env.int("PAYMENT_AMOUNT_CENTS", default=199)
+PAYMENT_AMOUNT_CENTS = env.int("PAYMENT_AMOUNT_CENTS", default=1000)
 
 # --------------------------------------------------
 # TWILIO (LEGACY – STILL PRESENT)
