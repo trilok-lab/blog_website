@@ -32,6 +32,11 @@ export default function Menu() {
         <Item label="📰 Articles" path="/article" />
         <Item label="🔥 Popular" path="/article/popular" />
         <Item label="✨ Featured" path="/article/slider" />
+
+        {/* Guest submission */}
+        <Item label="🧑‍💼 Submit Article (Guest)" path="/article/submit-guest" />
+
+        {/* User submission */}
         <Item label="✍️ Submit Article" path="/article/submit-user" />
 
         {loggedIn && (

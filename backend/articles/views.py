@@ -1,6 +1,6 @@
 # backend/articles/views.py
 
-from rest_framework import viewsets, filters, serializers, status
+from rest_framework import viewsets, filters, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,7 +12,7 @@ from .models import Article, Category
 from .serializers import ArticleSerializer, CategorySerializer
 from .permissions import IsOwnerOrAdminCanEdit
 
-from accounts.models import PhoneVerification
+from accounts.models import PhoneVerification, CustomUser
 from payments.models import Payment
 
 
@@ -48,9 +48,8 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """
-        NOTE:
-        - create is intentionally AllowAny because we support guest submissions
-        - actual security is enforced inside perform_create
+        - create is AllowAny (guest + users)
+        - actual enforcement happens in perform_create
         """
         if self.action in ["list", "retrieve", "create", "slider", "popular"]:
             return [AllowAny()]
@@ -111,7 +110,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
                             "payment_id": "Payment not completed."
                         })
 
-                    # ✅ Consume payment HERE (correct place)
                     payment.used = True
                     payment.save(update_fields=["used"])
 
@@ -155,7 +153,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 "verification_session_id": "Phone not verified."
             })
 
-        if hasattr(pv, "is_expired") and pv.is_expired():
+        if pv.is_expired():
             raise serializers.ValidationError({
                 "verification_session_id": "Verification expired."
             })
@@ -176,7 +174,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
                         "payment_id": "Payment not completed."
                     })
 
-                # ✅ Consume payment
                 payment.used = True
                 payment.save(update_fields=["used"])
 
@@ -185,8 +182,16 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 "payment_id": "Payment not found."
             })
 
+        # 🔑 ASSIGN SYSTEM GUEST USER
+        try:
+            guest_user = CustomUser.objects.get(username="GUEST")
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError({
+                "author": "System user GUEST not found. Create it in admin."
+            })
+
         serializer.save(
-            author=None,
+            author=guest_user,
             is_approved=False,
         )
 

@@ -9,7 +9,6 @@ if (!API_BASE_URL) {
   throw new Error("API base URL not configured");
 }
 
-// 🔐 CENTRAL REQUEST HANDLER
 async function apiRequest(path, method = "GET", body = null, token = null) {
   const headers = {
     "Content-Type": "application/json",
@@ -45,15 +44,20 @@ async function apiRequest(path, method = "GET", body = null, token = null) {
 }
 
 /* =======================
-   ✅ AUTH ENDPOINTS
+   AUTH
 ======================= */
 
-// 🔥 FIXED — API PREFIX ADDED
 export const requestPhoneCode = (mobile_no) =>
   apiRequest("/api/auth/request-phone-code/", "POST", { mobile_no });
 
-export const verifyPhoneCode = (session_id, code) =>
-  apiRequest("/api/auth/verify-phone-code/", "POST", { session_id, code });
+/**
+ * ✅ FIXED: accept object, not positional args
+ */
+export const verifyPhoneCode = ({ session_id, code }) =>
+  apiRequest("/api/auth/verify-phone-code/", "POST", {
+    session_id,
+    code,
+  });
 
 export const registerUser = (payload) =>
   apiRequest("/api/auth/register/", "POST", payload);
