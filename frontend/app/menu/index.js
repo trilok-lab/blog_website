@@ -12,6 +12,8 @@ export default function Menu() {
   const { theme, toggleTheme } = useTheme();
   const [loggedIn, setLoggedIn] = useState(false);
 
+  /* ---------------- AUTH CHECK ---------------- */
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem("access_token");
@@ -20,37 +22,42 @@ export default function Menu() {
     checkAuth();
   }, []);
 
+  /* ---------------- MENU ITEM ---------------- */
+
   const Item = ({ label, path }) => (
     <TouchableOpacity style={styles.item} onPress={() => router.push(path)}>
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );
 
+  /* ---------------- RENDER ---------------- */
+
   return (
     <AppShell>
       <View style={styles.container}>
+        {/* COMMON */}
         <Item label="📰 Articles" path="/article" />
         <Item label="🔥 Popular" path="/article/popular" />
         <Item label="✨ Featured" path="/article/slider" />
 
-        {/* Guest submission */}
-        <Item label="🧑‍💼 Submit Article (Guest)" path="/article/submit-guest" />
-
-        {/* User submission */}
-        <Item label="✍️ Submit Article" path="/article/submit-user" />
-
-        {loggedIn && (
-          <Item label="🔔 Notifications" path="/notifications" />
+        {/* 🔁 SUBMIT ARTICLE SWITCH */}
+        {loggedIn ? (
+          <Item label="✍️ Submit Article" path="/article/submit-user" />
+        ) : (
+          <Item label="🧑‍💼 Submit Article (Guest)" path="/article/submit-guest" />
         )}
 
+        {/* COMMON */}
         <Item label="☎️ Contact" path="/contact" />
 
+        {/* THEME */}
         <TouchableOpacity style={styles.toggle} onPress={toggleTheme}>
           <Text style={styles.text}>
             {theme === "dark" ? "🌞 Light Mode" : "🌙 Dark Mode"}
           </Text>
         </TouchableOpacity>
 
+        {/* LOGIN / LOGOUT SWITCH */}
         {loggedIn ? (
           <TouchableOpacity
             style={styles.toggle}
@@ -70,6 +77,8 @@ export default function Menu() {
     </AppShell>
   );
 }
+
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   container: { paddingTop: 10 },
