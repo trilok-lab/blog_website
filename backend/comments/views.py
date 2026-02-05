@@ -1,44 +1,34 @@
-# comments/views.py
+# backend/comments/views.py
 
 from rest_framework import viewsets, serializers
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from .models import Comment
 from .serializers import CommentSerializer
+from accounts.models import PhoneVerification
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """
     Public comment endpoints:
-    - GET list (approved only) → public
-    - GET retrieve → public
-    - POST create → authenticated users only
+
+    - GET list → approved comments only (public)
+    - GET retrieve → approved only (public)
+    - POST create:
+        • authenticated users
+        • guests with OTP verification
     """
 
     queryset = Comment.objects.select_related("article", "user")
     serializer_class = CommentSerializer
-
-    # 🔑 CRITICAL: allow request to reach get_permissions()
     permission_classes = [AllowAny]
 
     # --------------------------------------
-    # PER-ACTION PERMISSIONS
-    # --------------------------------------
-    def get_permissions(self):
-        if self.action in ["list", "retrieve", "by_article"]:
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    # --------------------------------------
-    # LIST COMMENTS (PUBLIC)
+    # LIST COMMENTS (PUBLIC, APPROVED ONLY)
     # --------------------------------------
     def list(self, request, *args, **kwargs):
-        """
-        GET /api/comments/?article=<id or slug>
-        Returns approved comments only.
-        """
         article_param = request.query_params.get("article")
 
         qs = Comment.objects.filter(approved=True)
@@ -54,18 +44,71 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # --------------------------------------
-    # CREATE COMMENT (AUTH ONLY)
+    # CREATE COMMENT (USER + GUEST)
     # --------------------------------------
     def perform_create(self, serializer):
-        user = self.request.user
+        request = self.request
+        data = request.data or {}
+        user = request.user if request.user.is_authenticated else None
 
-        if not user or not user.is_authenticated:
-            raise serializers.ValidationError(
-                {"detail": "Login required to post a comment"}
+        # ==================================================
+        # AUTHENTICATED USER FLOW (UNCHANGED)
+        # ==================================================
+        if user:
+            is_auto_approved = getattr(user, "is_admin", False)
+            serializer.save(
+                user=user,
+                approved=is_auto_approved,
             )
+            return
 
-        is_auto_approved = getattr(user, "is_admin", False)
-        serializer.save(user=user, approved=is_auto_approved)
+        # ==================================================
+        # GUEST FLOW (OTP VERIFIED)
+        # ==================================================
+        verification_session_id = data.get("verification_session_id")
+        guest_name = data.get("guest_name")
+        guest_mobile = data.get("guest_mobile")
+
+        if not verification_session_id:
+            raise serializers.ValidationError({
+                "verification_session_id": "Phone verification required."
+            })
+
+        if not guest_name:
+            raise serializers.ValidationError({
+                "guest_name": "Guest name is required."
+            })
+
+        if not guest_mobile:
+            raise serializers.ValidationError({
+                "guest_mobile": "Guest mobile number is required."
+            })
+
+        try:
+            pv = PhoneVerification.objects.get(
+                session_id=verification_session_id
+            )
+        except PhoneVerification.DoesNotExist:
+            raise serializers.ValidationError({
+                "verification_session_id": "Invalid verification session."
+            })
+
+        if pv.verified is not True:
+            raise serializers.ValidationError({
+                "verification_session_id": "Phone number not verified."
+            })
+
+        if pv.is_expired():
+            raise serializers.ValidationError({
+                "verification_session_id": "Verification session expired."
+            })
+
+        serializer.save(
+            user=None,
+            guest_name=guest_name,
+            guest_mobile=guest_mobile,
+            approved=False,
+        )
 
     # --------------------------------------
     # OPTIONAL: BY ARTICLE SLUG
@@ -73,8 +116,12 @@ class CommentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="by-article")
     def by_article(self, request):
         slug = request.query_params.get("slug")
+
         if not slug:
-            return Response({"detail": "slug required"}, status=400)
+            return Response(
+                {"detail": "slug required"},
+                status=400
+            )
 
         comments = Comment.objects.filter(
             article__slug=slug,

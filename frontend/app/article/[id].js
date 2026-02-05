@@ -10,9 +10,12 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { getArticle } from "../../src/api/articles";
 import client from "../../src/api/client";
@@ -39,12 +42,35 @@ export default function ArticleDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useTheme();
 
+  /* ---------------- ARTICLE STATE ---------------- */
+
   const [article, setArticle] = useState(null);
+
+  /* ---------------- COMMENTS STATE ---------------- */
+
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
 
+  /* ---------------- LOADING STATE ---------------- */
+
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  /* ---------------- AUTH STATE ---------------- */
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  /* ---------------- GUEST OTP STATE ---------------- */
+
+  const [guestName, setGuestName] = useState("");          // ✅ ADDED
+  const [guestMobile, setGuestMobile] = useState("");
+  const [guestOtp, setGuestOtp] = useState("");
+  const [otpSessionId, setOtpSessionId] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   /* ---------------- LOADERS ---------------- */
 
@@ -57,13 +83,32 @@ export default function ArticleDetail() {
     const res = await publicClient.get(
       `/api/comments/?article=${id}`
     );
+
     const data = Array.isArray(res.data) ? res.data : [];
+
     setComments(
       data.sort(
         (a, b) =>
           new Date(b.created_at) - new Date(a.created_at)
       )
     );
+  };
+
+  const checkAuth = async () => {
+    const token = await AsyncStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadArticle();
+      await loadComments();
+    } catch (e) {
+      console.log("Refresh error", e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   /* ---------------- EFFECT ---------------- */
@@ -74,6 +119,7 @@ export default function ArticleDetail() {
     const load = async () => {
       try {
         setLoading(true);
+        await checkAuth();
         await loadArticle();
         await loadComments();
       } catch (e) {
@@ -90,17 +136,101 @@ export default function ArticleDetail() {
     };
   }, [id]);
 
-  /* ---------------- ACTIONS ---------------- */
+  /* ---------------- OTP ACTIONS (GUEST) ---------------- */
+
+  const requestGuestOtp = async () => {
+    if (!guestMobile.trim()) {
+      Alert.alert("Error", "Enter mobile number");
+      return;
+    }
+
+    try {
+      setSendingOtp(true);
+
+      const res = await publicClient.post(
+        "/api/auth/request-phone-code/",
+        {
+          mobile_no: guestMobile.trim(),
+        }
+      );
+
+      setOtpSessionId(res.data.session_id);
+      setOtpSent(true);
+
+      Alert.alert("OTP Sent", "Please check your phone");
+    } catch (e) {
+      Alert.alert("Error", "Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyGuestOtp = async () => {
+    if (guestOtp.trim().length !== 6) {
+      Alert.alert("Error", "Enter valid 6-digit OTP");
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+
+      await publicClient.post(
+        "/api/auth/verify-phone-code/",
+        {
+          session_id: otpSessionId,
+          code: guestOtp.trim(),
+        }
+      );
+
+      setOtpVerified(true);
+
+      Alert.alert(
+        "Verified",
+        "OTP verified. You can now comment."
+      );
+    } catch (e) {
+      Alert.alert("Error", "Invalid OTP");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  /* ---------------- COMMENT ACTION ---------------- */
 
   const submitComment = async () => {
     if (!commentText.trim()) return;
 
+    if (!isLoggedIn && !otpVerified) {
+      Alert.alert(
+        "Verification Required",
+        "Please verify OTP before commenting"
+      );
+      return;
+    }
+
+    if (!isLoggedIn && !guestName.trim()) {
+      Alert.alert("Required", "Please enter your name");
+      return;
+    }
+
     setPosting(true);
+
     try {
-      await client.post("/api/comments/", {
-        article: id,
-        content: commentText,
-      });
+      if (isLoggedIn) {
+        await client.post("/api/comments/", {
+          article: id,
+          content: commentText,
+        });
+      } else {
+        await publicClient.post("/api/comments/", {
+          article: id,
+          content: commentText,
+          guest_name: guestName.trim(),
+          guest_mobile: guestMobile.trim(),
+          verification_session_id: otpSessionId,
+        });
+      }
+
       setCommentText("");
       loadComments();
     } catch (e) {
@@ -147,6 +277,13 @@ export default function ArticleDetail() {
   return (
     <AppShell title={article.title}>
       <ScrollView
+        alwaysBounceVertical
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
         contentContainerStyle={[
           styles.container,
           { backgroundColor: colors.background },
@@ -205,7 +342,7 @@ export default function ArticleDetail() {
           ]}
         />
 
-        {/* COMMENTS */}
+        {/* COMMENTS HEADER */}
         <Text
           style={[
             styles.commentsHeader,
@@ -215,11 +352,113 @@ export default function ArticleDetail() {
           Comments
         </Text>
 
+        {/* -------- GUEST OTP BLOCK -------- */}
+        {!isLoggedIn && !otpVerified && (
+          <View
+            style={[
+              styles.commentBox,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            {/* ✅ ADDED: GUEST NAME */}
+            <TextInput
+              placeholder="Your name"
+              placeholderTextColor={colors.muted}
+              value={guestName}
+              onChangeText={setGuestName}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.inputBg,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+            />
+
+            <Text
+              style={{
+                color: colors.text,
+                fontWeight: "600",
+                marginBottom: 8,
+              }}
+            >
+              Verify mobile number to comment
+            </Text>
+
+            <TextInput
+              placeholder="Mobile number"
+              placeholderTextColor={colors.muted}
+              value={guestMobile}
+              onChangeText={setGuestMobile}
+              keyboardType="phone-pad"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.inputBg,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+            />
+
+            {otpSent && (
+              <TextInput
+                placeholder="Enter OTP"
+                placeholderTextColor={colors.muted}
+                value={guestOtp}
+                onChangeText={setGuestOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBg,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+              />
+            )}
+
+            {!otpSent ? (
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={requestGuestOtp}
+                disabled={sendingOtp}
+              >
+                <Text style={styles.postText}>
+                  {sendingOtp ? "Sending..." : "Send OTP"}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={verifyGuestOtp}
+                disabled={verifyingOtp}
+              >
+                <Text style={styles.postText}>
+                  {verifyingOtp ? "Verifying..." : "Verify OTP"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* COMMENT INPUT */}
         <View
           style={[
             styles.commentBox,
-            { backgroundColor: colors.card },
+            {
+              backgroundColor: colors.card,
+              opacity: isLoggedIn || otpVerified ? 1 : 0.5,
+            },
           ]}
         >
           <TextInput
@@ -228,6 +467,7 @@ export default function ArticleDetail() {
             value={commentText}
             onChangeText={setCommentText}
             multiline
+            editable={isLoggedIn || otpVerified}
             style={[
               styles.input,
               {
@@ -237,13 +477,14 @@ export default function ArticleDetail() {
               },
             ]}
           />
+
           <TouchableOpacity
             style={[
               styles.postButton,
               { backgroundColor: colors.primary },
             ]}
             onPress={submitComment}
-            disabled={posting}
+            disabled={posting || (!isLoggedIn && !otpVerified)}
           >
             <Text style={styles.postText}>
               {posting ? "Posting..." : "Post"}
@@ -276,7 +517,7 @@ export default function ArticleDetail() {
                   { color: colors.text },
                 ]}
               >
-                {c.user_name || "User"}
+                {c.user_name || c.guest_name || "Guest"}
               </Text>
               <Text
                 style={[
