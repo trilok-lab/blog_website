@@ -4,10 +4,12 @@ from rest_framework import viewsets, serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django.conf import settings
 
 from .models import Comment
 from .serializers import CommentSerializer
 from accounts.models import PhoneVerification
+from notifications.emails import send_async_email
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -21,7 +23,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         • guests with OTP verification
     """
 
-    queryset = Comment.objects.select_related("article", "user")
+    queryset = Comment.objects.select_related("article", "user", "article__author")
     serializer_class = CommentSerializer
     permission_classes = [AllowAny]
 
@@ -52,14 +54,36 @@ class CommentViewSet(viewsets.ModelViewSet):
         user = request.user if request.user.is_authenticated else None
 
         # ==================================================
-        # AUTHENTICATED USER FLOW (UNCHANGED)
+        # AUTHENTICATED USER FLOW
         # ==================================================
         if user:
             is_auto_approved = getattr(user, "is_admin", False)
-            serializer.save(
+            comment = serializer.save(
                 user=user,
                 approved=is_auto_approved,
             )
+
+            # 🔔 Admin notification (pending approval)
+            if not comment.approved:
+                send_async_email(
+                    subject="[Comment] New comment pending approval",
+                    to_email=settings.DEFAULT_FROM_EMAIL,
+                    text_content=f"New comment on article ID {comment.article_id}",
+                    html_content=None,
+                )
+
+            # 📩 Author notification (PDF-required)
+            article_author = comment.article.author
+            if article_author and article_author.email:
+                send_async_email(
+                    subject="New comment on your article",
+                    to_email=article_author.email,
+                    text_content=(
+                        f"Your article '{comment.article.title}' received a new comment.\n\n"
+                        f"Comment:\n{comment.content}"
+                    ),
+                    html_content=None,
+                )
             return
 
         # ==================================================
@@ -103,12 +127,33 @@ class CommentViewSet(viewsets.ModelViewSet):
                 "verification_session_id": "Verification session expired."
             })
 
-        serializer.save(
+        comment = serializer.save(
             user=None,
             guest_name=guest_name,
             guest_mobile=guest_mobile,
             approved=False,
         )
+
+        # 🔔 Admin notification (guest comment)
+        send_async_email(
+            subject="[Comment] Guest comment pending approval",
+            to_email=settings.DEFAULT_FROM_EMAIL,
+            text_content=f"Guest comment on article ID {comment.article_id}",
+            html_content=None,
+        )
+
+        # 📩 Author notification (PDF-required)
+        article_author = comment.article.author
+        if article_author and article_author.email:
+            send_async_email(
+                subject="New comment on your article",
+                to_email=article_author.email,
+                text_content=(
+                    f"Your article '{comment.article.title}' received a new comment.\n\n"
+                    f"Comment:\n{comment.content}"
+                ),
+                html_content=None,
+            )
 
     # --------------------------------------
     # OPTIONAL: BY ARTICLE SLUG

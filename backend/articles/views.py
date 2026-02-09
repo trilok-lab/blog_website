@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 from django.db.models import F
+from django.conf import settings   # ✅ ADDED
 
 from .models import Article, Category
 from .serializers import ArticleSerializer, CategorySerializer
@@ -14,6 +15,7 @@ from .permissions import IsOwnerOrAdminCanEdit
 
 from accounts.models import PhoneVerification, CustomUser
 from payments.models import Payment
+from notifications.emails import send_async_email   # ✅ ADDED
 
 
 # =========================
@@ -118,10 +120,19 @@ class ArticleViewSet(viewsets.ModelViewSet):
                     "payment_id": "Payment not found."
                 })
 
-            serializer.save(
+            article = serializer.save(
                 author=user,
                 is_approved=getattr(user, "is_admin", False),
             )
+
+            # ✅ ADDED — email admin if pending approval
+            if not article.is_approved:
+                send_async_email(
+                    subject="[Article] New article pending approval",
+                    to_email=settings.DEFAULT_FROM_EMAIL,
+                    text_content=f"Article submitted: {article.title}",
+                    html_content=None,
+                )
             return
 
         # ======================================================
@@ -190,9 +201,17 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 "author": "System user GUEST not found. Create it in admin."
             })
 
-        serializer.save(
+        article = serializer.save(
             author=guest_user,
             is_approved=False,
+        )
+
+        # ✅ ADDED — email admin for guest submission
+        send_async_email(
+            subject="[Article] Guest article pending approval",
+            to_email=settings.DEFAULT_FROM_EMAIL,
+            text_content=f"Guest article submitted: {article.title}",
+            html_content=None,
         )
 
     # =========================
