@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 from django.db.models import F
-from django.conf import settings   # ✅ ADDED
+from django.conf import settings
 
 from .models import Article, Category
 from .serializers import ArticleSerializer, CategorySerializer
@@ -15,12 +15,9 @@ from .permissions import IsOwnerOrAdminCanEdit
 
 from accounts.models import PhoneVerification, CustomUser
 from payments.models import Payment
-from notifications.emails import send_async_email   # ✅ ADDED
+from notifications.emails import send_async_email
 
 
-# =========================
-# CATEGORY VIEWSET
-# =========================
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -33,9 +30,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
 
 
-# =========================
-# ARTICLE VIEWSET
-# =========================
 class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
@@ -49,10 +43,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at", "popularity"]
 
     def get_permissions(self):
-        """
-        - create is AllowAny (guest + users)
-        - actual enforcement happens in perform_create
-        """
         if self.action in ["list", "retrieve", "create", "slider", "popular"]:
             return [AllowAny()]
         return [IsAuthenticated(), IsOwnerOrAdminCanEdit()]
@@ -77,18 +67,15 @@ class ArticleViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    # =========================
-    # ARTICLE CREATE (CORE LOGIC)
-    # =========================
     def perform_create(self, serializer):
         request = self.request
         data = request.data or {}
         user = request.user if request.user.is_authenticated else None
         payment_id = data.get("payment_id")
 
-        # ======================================================
+        # =========================
         # LOGGED-IN USER FLOW
-        # ======================================================
+        # =========================
         if user:
             if not payment_id:
                 raise serializers.ValidationError({
@@ -103,110 +90,68 @@ class ArticleViewSet(viewsets.ModelViewSet):
                     )
 
                     if payment.used:
-                        raise serializers.ValidationError({
-                            "payment_id": "Payment already used."
-                        })
+                        raise serializers.ValidationError({"payment_id": "Payment already used."})
 
                     if payment.status != Payment.STATUS_PAID:
-                        raise serializers.ValidationError({
-                            "payment_id": "Payment not completed."
-                        })
+                        raise serializers.ValidationError({"payment_id": "Payment not completed."})
 
                     payment.used = True
                     payment.save(update_fields=["used"])
 
             except Payment.DoesNotExist:
-                raise serializers.ValidationError({
-                    "payment_id": "Payment not found."
-                })
+                raise serializers.ValidationError({"payment_id": "Payment not found."})
 
-            article = serializer.save(
+            serializer.save(
                 author=user,
-                is_approved=getattr(user, "is_admin", False),
+                is_approved=True,
             )
-
-            # ✅ ADDED — email admin if pending approval
-            if not article.is_approved:
-                send_async_email(
-                    subject="[Article] New article pending approval",
-                    to_email=settings.DEFAULT_FROM_EMAIL,
-                    text_content=f"Article submitted: {article.title}",
-                    html_content=None,
-                )
             return
 
-        # ======================================================
-        # GUEST USER FLOW (OTP + PAYMENT)
-        # ======================================================
+        # =========================
+        # GUEST USER FLOW
+        # =========================
         verification_session_id = data.get("verification_session_id")
 
         if not verification_session_id:
-            raise serializers.ValidationError({
-                "verification_session_id": "Phone verification required."
-            })
+            raise serializers.ValidationError({"verification_session_id": "Phone verification required."})
 
         if not payment_id:
-            raise serializers.ValidationError({
-                "payment_id": "Payment is required."
-            })
+            raise serializers.ValidationError({"payment_id": "Payment is required."})
 
         try:
-            pv = PhoneVerification.objects.get(
-                session_id=verification_session_id
-            )
+            pv = PhoneVerification.objects.get(session_id=verification_session_id)
         except PhoneVerification.DoesNotExist:
-            raise serializers.ValidationError({
-                "verification_session_id": "Invalid verification session."
-            })
+            raise serializers.ValidationError({"verification_session_id": "Invalid verification session."})
 
-        if pv.verified is not True:
-            raise serializers.ValidationError({
-                "verification_session_id": "Phone not verified."
-            })
-
-        if pv.is_expired():
-            raise serializers.ValidationError({
-                "verification_session_id": "Verification expired."
-            })
+        if not pv.verified or pv.is_expired():
+            raise serializers.ValidationError({"verification_session_id": "Phone not verified or expired."})
 
         try:
             with transaction.atomic():
-                payment = Payment.objects.select_for_update().get(
-                    id=payment_id
-                )
+                payment = Payment.objects.select_for_update().get(id=payment_id)
 
                 if payment.used:
-                    raise serializers.ValidationError({
-                        "payment_id": "Payment already used."
-                    })
+                    raise serializers.ValidationError({"payment_id": "Payment already used."})
 
                 if payment.status != Payment.STATUS_PAID:
-                    raise serializers.ValidationError({
-                        "payment_id": "Payment not completed."
-                    })
+                    raise serializers.ValidationError({"payment_id": "Payment not completed."})
 
                 payment.used = True
                 payment.save(update_fields=["used"])
 
         except Payment.DoesNotExist:
-            raise serializers.ValidationError({
-                "payment_id": "Payment not found."
-            })
+            raise serializers.ValidationError({"payment_id": "Payment not found."})
 
-        # 🔑 ASSIGN SYSTEM GUEST USER
         try:
             guest_user = CustomUser.objects.get(username="GUEST")
         except CustomUser.DoesNotExist:
-            raise serializers.ValidationError({
-                "author": "System user GUEST not found. Create it in admin."
-            })
+            raise serializers.ValidationError({"author": "System user GUEST not found."})
 
         article = serializer.save(
             author=guest_user,
             is_approved=False,
         )
 
-        # ✅ ADDED — email admin for guest submission
         send_async_email(
             subject="[Article] Guest article pending approval",
             to_email=settings.DEFAULT_FROM_EMAIL,
@@ -214,21 +159,15 @@ class ArticleViewSet(viewsets.ModelViewSet):
             html_content=None,
         )
 
-    # =========================
-    # EXTRA ENDPOINTS
-    # =========================
     @action(detail=False, methods=["get"], url_path="slider")
     def slider(self, request):
         qs = self.get_queryset().filter(is_slider=True).order_by("-created_at")
         page = self.paginate_queryset(qs)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
+            return self.get_paginated_response(self.get_serializer(page, many=True).data)
+        return Response(self.get_serializer(qs, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="popular")
     def popular(self, request):
         qs = self.get_queryset().order_by("-popularity")[:20]
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
+        return Response(self.get_serializer(qs, many=True).data)

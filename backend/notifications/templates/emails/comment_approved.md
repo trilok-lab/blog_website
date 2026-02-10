@@ -10,4 +10,17 @@ A comment on your article has been approved.
 
 **At:** {{ created_at }}
 
-Visit your article to see it live.
+<br>
+
+<a href="{{ article_url }}"
+   style="
+     display:inline-block;
+     padding:10px 16px;
+     background:#16a34a;
+     color:#ffffff;
+     text-decoration:none;
+     border-radius:6px;
+     font-weight:600;
+   ">
+   View Article
+</a>

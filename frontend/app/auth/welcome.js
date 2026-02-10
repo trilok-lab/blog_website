@@ -1,51 +1,179 @@
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+// frontend/app/auth/welcome.js
+
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+
 import { loginUser } from "../../src/api/auth";
 import { saveTokens } from "../../src/utils/token";
 
 export default function Welcome() {
-  const r = useRouter();
-  const [u, setU] = useState("");
-  const [p, setP] = useState("");
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const login = async () => {
-    const res = await loginUser({ username: u, password: p });
-    await saveTokens(res);
-    r.replace("/article");
+    if (!username || !password) {
+      return Alert.alert("Error", "Enter username and password");
+    }
+
+    try {
+      setLoading(true);
+      const res = await loginUser({ username, password });
+      await saveTokens(res);
+      router.replace("/menu");
+    } catch {
+      Alert.alert("Login failed", "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={{ padding: 24, justifyContent: "center", flex: 1 }}>
-      <Text style={{ fontSize: 32, textAlign: "center", marginBottom: 20 }}>
-        Welcome
-      </Text>
+    <View style={styles.container}>
+      {/* HEADER */}
+      <Text style={styles.title}>Welcome</Text>
+      <Text style={styles.subtitle}>Sign in to continue</Text>
 
-      <TextInput placeholder="Username / Email" value={u} onChangeText={setU}
-        style={{ borderWidth: 1, padding: 12, marginBottom: 10 }} />
+      {/* CARD */}
+      <View style={styles.card}>
+        <TextInput
+          placeholder="Username or Email"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          style={styles.input}
+        />
 
-      <TextInput placeholder="Password" secureTextEntry value={p} onChangeText={setP}
-        style={{ borderWidth: 1, padding: 12, marginBottom: 16 }} />
+        <TextInput
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+        />
 
-      <TouchableOpacity onPress={login}
-        style={{ backgroundColor: "#1E90FF", padding: 14, marginBottom: 10 }}>
-        <Text style={{ color: "#fff", textAlign: "center" }}>Login</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.primaryBtn, loading && styles.disabled]}
+          onPress={login}
+          disabled={loading}
+        >
+          <Text style={styles.primaryText}>
+            {loading ? "Logging in..." : "Login"}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => r.push("/auth/register")}
-        style={{ borderWidth: 1, padding: 14, marginBottom: 20 }}>
-        <Text style={{ textAlign: "center" }}>Register</Text>
-      </TouchableOpacity>
+        <View style={styles.divider} />
 
-      <TouchableOpacity onPress={() => r.push("/auth/social?provider=google")}
-        style={{ padding: 14, backgroundColor: "#eee", marginBottom: 10 }}>
-        <Text style={{ textAlign: "center" }}>Continue with Google</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => router.push("/auth/register")}
+        >
+          <Text style={styles.secondaryText}>Create an account</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => r.push("/auth/social?provider=facebook")}
-        style={{ padding: 14, backgroundColor: "#eee" }}>
-        <Text style={{ textAlign: "center" }}>Continue with Facebook</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.socialBtn}
+          onPress={() => router.push("/auth/social?provider=google")}
+        >
+          <Text style={styles.socialText}>Continue with Google</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.socialBtn, styles.fb]}
+          onPress={() => router.push("/auth/social?provider=facebook")}
+        >
+          <Text style={[styles.socialText, { color: "#fff" }]}>
+            Continue with Facebook
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 64,
+    backgroundColor: "#f8f9fa",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+  },
+  subtitle: {
+    marginTop: 6,
+    marginBottom: 28,
+    color: "#6c757d",
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: "#fff",
+    padding: 18,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+  },
+  primaryBtn: {
+    backgroundColor: "#0d6efd",
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 6,
+  },
+  primaryText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#e9ecef",
+    marginVertical: 18,
+  },
+  secondaryBtn: {
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    marginBottom: 14,
+  },
+  secondaryText: {
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  socialBtn: {
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ced4da",
+    marginBottom: 10,
+  },
+  fb: {
+    backgroundColor: "#1877f2",
+    borderColor: "#1877f2",
+  },
+  socialText: {
+    fontWeight: "600",
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+});

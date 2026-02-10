@@ -1,4 +1,5 @@
 ﻿// frontend/app/menu/index.js
+
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
@@ -13,7 +14,6 @@ export default function Menu() {
   const [loggedIn, setLoggedIn] = useState(false);
 
   /* ---------------- AUTH CHECK ---------------- */
-
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem("access_token");
@@ -23,7 +23,6 @@ export default function Menu() {
   }, []);
 
   /* ---------------- MENU ITEM ---------------- */
-
   const Item = ({ label, path }) => (
     <TouchableOpacity style={styles.item} onPress={() => router.push(path)}>
       <Text style={styles.text}>{label}</Text>
@@ -31,7 +30,6 @@ export default function Menu() {
   );
 
   /* ---------------- RENDER ---------------- */
-
   return (
     <AppShell>
       <View style={styles.container}>
@@ -47,6 +45,11 @@ export default function Menu() {
           <Item label="🧑‍💼 Submit Article (Guest)" path="/article/submit-guest" />
         )}
 
+        {/* 🔔 NOTIFICATIONS (RESTORED) */}
+        {loggedIn && (
+          <Item label="🔔 Notifications" path="/notifications" />
+        )}
+
         {/* COMMON */}
         <Item label="☎️ Contact" path="/contact" />
 
@@ -57,7 +60,7 @@ export default function Menu() {
           </Text>
         </TouchableOpacity>
 
-        {/* LOGIN / LOGOUT SWITCH */}
+        {/* LOGIN / LOGOUT */}
         {loggedIn ? (
           <TouchableOpacity
             style={styles.toggle}
@@ -79,7 +82,6 @@ export default function Menu() {
 }
 
 /* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
   container: { paddingTop: 10 },
   item: {

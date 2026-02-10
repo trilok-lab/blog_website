@@ -1,6 +1,14 @@
 // frontend/app/auth/login.js
+
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 import { loginUser } from "../../src/api/auth";
@@ -8,15 +16,19 @@ import { saveTokens } from "../../src/utils/token";
 
 export default function Login() {
   const router = useRouter();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function onLogin() {
+  const onLogin = async () => {
     if (!username || !password) {
       return Alert.alert("Error", "Enter username and password");
     }
 
     try {
+      setLoading(true);
+
       const res = await loginUser({ username, password });
 
       await saveTokens({
@@ -25,34 +37,42 @@ export default function Login() {
       });
 
       router.replace("/menu");
-    } catch (err) {
+    } catch {
       Alert.alert("Login failed", "Invalid credentials");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Login</Text>
+    <View style={styles.screen}>
+      <Text style={styles.heading}>Login</Text>
 
       <View style={styles.card}>
         <TextInput
           placeholder="Username or Email"
           value={username}
           onChangeText={setUsername}
-          style={styles.input}
           autoCapitalize="none"
+          style={styles.input}
         />
 
         <TextInput
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
-          style={styles.input}
           secureTextEntry
+          style={styles.input}
         />
 
-        <Pressable style={styles.primaryBtn} onPress={onLogin}>
-          <Text style={styles.primaryText}>Login</Text>
+        <Pressable
+          style={[styles.primaryBtn, loading && styles.disabled]}
+          onPress={onLogin}
+          disabled={loading}
+        >
+          <Text style={styles.primaryText}>
+            {loading ? "Logging in..." : "Login"}
+          </Text>
         </Pressable>
 
         <View style={styles.divider} />
@@ -73,7 +93,7 @@ export default function Login() {
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => router.push("/auth/otp-request")}>
+        <Pressable onPress={() => router.push("/auth/register")}>
           <Text style={styles.link}>Create an account</Text>
         </Pressable>
       </View>
@@ -82,39 +102,68 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f8f9fa" },
-  header: { fontSize: 24, fontWeight: "600", marginBottom: 16 },
+  screen: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+    paddingHorizontal: 24,
+    paddingTop: 48,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 20,
+  },
   card: {
     backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 8,
-    borderColor: "#dee2e6",
+    padding: 18,
+    borderRadius: 12,
     borderWidth: 1,
+    borderColor: "#dee2e6",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ced4da",
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
   },
   primaryBtn: {
     backgroundColor: "#0d6efd",
-    padding: 14,
-    borderRadius: 6,
+    padding: 16,
+    borderRadius: 10,
     alignItems: "center",
   },
-  primaryText: { color: "#fff", fontWeight: "600" },
-  divider: { height: 1, backgroundColor: "#dee2e6", marginVertical: 16 },
+  primaryText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#dee2e6",
+    marginVertical: 18,
+  },
   socialBtn: {
     padding: 14,
-    borderRadius: 6,
+    borderRadius: 10,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ced4da",
     marginBottom: 10,
   },
-  fb: { backgroundColor: "#1877f2", borderColor: "#1877f2" },
-  socialText: { fontWeight: "600" },
-  link: { marginTop: 10, color: "#0d6efd", textAlign: "center" },
+  fb: {
+    backgroundColor: "#1877f2",
+    borderColor: "#1877f2",
+  },
+  socialText: {
+    fontWeight: "600",
+  },
+  link: {
+    marginTop: 14,
+    color: "#0d6efd",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  disabled: {
+    opacity: 0.6,
+  },
 });

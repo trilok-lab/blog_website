@@ -153,7 +153,7 @@ export default function SubmitArticleUser() {
       setSubmitting(true);
       await submitArticle(fd);
       await AsyncStorage.removeItem(STORAGE_KEY);
-      Alert.alert("Submitted", "Article sent for admin approval");
+      Alert.alert("Congrats!!!", "Your article has been published 🎉");
       router.replace("/article");
     } catch (e) {
       Alert.alert(

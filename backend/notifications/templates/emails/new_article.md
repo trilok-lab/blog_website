@@ -8,4 +8,17 @@ A new article has been submitted to your blog.
 **Submitted At:** {{ created_at }}  
 **Approved:** {{ is_approved }}
 
-Please review it in the admin panel.
+<br>
+
+<a href="{{ admin_article_url }}"
+   style="
+     display:inline-block;
+     padding:10px 16px;
+     background:#2563eb;
+     color:#ffffff;
+     text-decoration:none;
+     border-radius:6px;
+     font-weight:600;
+   ">
+   Review Article
+</a>
