@@ -8,11 +8,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AppShell({ title, children }) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, template } = useTheme();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 🔑 check auth state from storage
   useEffect(() => {
     let mounted = true;
 
@@ -39,41 +38,72 @@ export default function AppShell({ title, children }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* 🔷 APP NAME CARD */}
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => router.push("/article")}
-        style={[styles.appCard, { backgroundColor: colors.card }]}
-      >
-        <Text style={[styles.appName, { color: colors.text }]}>
-          Trilok Blog App
-        </Text>
-      </TouchableOpacity>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingHorizontal: template === "modern" ? 16 : 8,
+        },
+      ]}
+    >
+      {/* 🔷 Template: MODERN */}
+      {template === "modern" && (
+        <>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push("/article")}
+            style={[styles.appCard, { backgroundColor: colors.card }]}
+          >
+            <Text style={[styles.appName, { color: colors.text }]}>
+              Trilok Blog App
+            </Text>
+          </TouchableOpacity>
 
-      {/* 🔷 MENU + ACCOUNT / PROFILE ROW */}
-      <View style={styles.navRow}>
-        <TouchableOpacity onPress={() => router.push("/menu")}>
-          <Text style={[styles.navText, { color: colors.primary }]}>
-            ☰ Menu
+          <View style={styles.navRow}>
+            <TouchableOpacity onPress={() => router.push("/menu")}>
+              <Text style={[styles.navText, { color: colors.primary }]}>
+                ☰ Menu
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={onAccountPress}>
+              <Text style={[styles.navText, { color: colors.primary }]}>
+                {isLoggedIn ? "Profile" : "LOGIN"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* 🔷 Template: MINIMAL */}
+      {template === "minimal" && (
+        <View style={styles.minimalHeader}>
+          <TouchableOpacity onPress={() => router.push("/menu")}>
+            <Text style={[styles.navText, { color: colors.primary }]}>
+              ☰
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={[styles.minimalTitle, { color: colors.text }]}>
+            Trilok Blog App
           </Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity onPress={onAccountPress}>
-          <Text style={[styles.navText, { color: colors.primary }]}>
-            {isLoggedIn ? "Profile" : "LOGIN"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity onPress={onAccountPress}>
+            <Text style={[styles.navText, { color: colors.primary }]}>
+              {isLoggedIn ? "👤" : "🔐"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* 🔷 PAGE TITLE */}
+      {/* PAGE TITLE */}
       {title && (
         <Text style={[styles.pageTitle, { color: colors.text }]}>
           {title}
         </Text>
       )}
 
-      {/* 🔷 PAGE CONTENT */}
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -82,7 +112,6 @@ export default function AppShell({ title, children }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 
   appCard: {
@@ -108,6 +137,19 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+
+  minimalHeader: {
+    marginTop: 40,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  minimalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
   },
 
   pageTitle: {

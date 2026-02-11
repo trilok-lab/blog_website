@@ -9,8 +9,18 @@ export function ThemeProvider({ children }) {
   const systemTheme = Appearance.getColorScheme();
   const [theme, setTheme] = useState(systemTheme || "light");
 
+  // 🔴 NEW: template system
+  const [template, setTemplate] = useState("modern"); 
+  // modern | minimal
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const toggleTemplate = () => {
+    setTemplate((prev) =>
+      prev === "modern" ? "minimal" : "modern"
+    );
   };
 
   const colors = useMemo(() => {
@@ -31,7 +41,15 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, colors, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        colors,
+        toggleTheme,
+        template,
+        toggleTemplate,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

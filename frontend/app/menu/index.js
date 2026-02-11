@@ -10,10 +10,9 @@ import { logout } from "../../src/auth/logout";
 
 export default function Menu() {
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, template, toggleTemplate } = useTheme();
   const [loggedIn, setLoggedIn] = useState(false);
 
-  /* ---------------- AUTH CHECK ---------------- */
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem("access_token");
@@ -22,35 +21,29 @@ export default function Menu() {
     checkAuth();
   }, []);
 
-  /* ---------------- MENU ITEM ---------------- */
   const Item = ({ label, path }) => (
     <TouchableOpacity style={styles.item} onPress={() => router.push(path)}>
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
   );
 
-  /* ---------------- RENDER ---------------- */
   return (
-    <AppShell>
+    <AppShell title="Menu">
       <View style={styles.container}>
-        {/* COMMON */}
         <Item label="📰 Articles" path="/article" />
         <Item label="🔥 Popular" path="/article/popular" />
         <Item label="✨ Featured" path="/article/slider" />
 
-        {/* 🔁 SUBMIT ARTICLE SWITCH */}
         {loggedIn ? (
           <Item label="✍️ Submit Article" path="/article/submit-user" />
         ) : (
           <Item label="🧑‍💼 Submit Article (Guest)" path="/article/submit-guest" />
         )}
 
-        {/* 🔔 NOTIFICATIONS (RESTORED) */}
         {loggedIn && (
           <Item label="🔔 Notifications" path="/notifications" />
         )}
 
-        {/* COMMON */}
         <Item label="☎️ Contact" path="/contact" />
 
         {/* THEME */}
@@ -60,7 +53,15 @@ export default function Menu() {
           </Text>
         </TouchableOpacity>
 
-        {/* LOGIN / LOGOUT */}
+        {/* TEMPLATE SWITCH */}
+        <TouchableOpacity style={styles.toggle} onPress={toggleTemplate}>
+          <Text style={styles.text}>
+            {template === "modern"
+              ? "🧩 Switch to Minimal Template"
+              : "🎨 Switch to Modern Template"}
+          </Text>
+        </TouchableOpacity>
+
         {loggedIn ? (
           <TouchableOpacity
             style={styles.toggle}
@@ -81,7 +82,6 @@ export default function Menu() {
   );
 }
 
-/* ---------------- STYLES ---------------- */
 const styles = StyleSheet.create({
   container: { paddingTop: 10 },
   item: {
